@@ -1,5 +1,5 @@
 {
-  "name": "repairing-broken-movements",
+  "name": "informatics_club",
   "version": "1.0.0",
   "main": ".eleventy.js",
   "scripts": {
@@ -7,15 +7,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/biorehab/repairing_broken_movements.git"
+    "url": "git+https://github.com/biorehab/informatics_club.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/biorehab/repairing_broken_movements/issues"
+    "url": "https://github.com/biorehab/informatics_club/issues"
   },
-  "homepage": "https://github.com/biorehab/repairing_broken_movements#readme",
+  "homepage": "https://github.com/biorehab/informatics_club#readme",
   "description": "",
   "devDependencies": {
     "@11ty/eleventy": "^3.0.0"

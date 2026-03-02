@@ -1,0 +1,33 @@
+/* Container for all sections */
+#rls-demo {
+  justify-content: center;
+  font-family: 'Inter', 'Roboto', 'Comfortaa', sans-serif;
+  background-color: #fff;
+}
+
+#rls-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px; /* Adds spacing between buttons */
+  margin-top: 10px;
+}
+
+#rls-plot {
+  display: block; /* Ensures no extra space below */
+  margin: 0 auto; /* Ensures centering if flexbox is not applied */
+}
+
+button {
+  font-size: 14px; /* Increase font size */
+  padding: 5px 10px; /* Add padding for a larger button */
+  border: none;
+  background-color: #007bff; /* Nice blue color */
+  color: white;
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}

@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+body {
+    font-family: 'Comfortaa', sans-serif;
+}
+
+.main-content {
+    width: 50%;  /* Leaves 20% margins on each side */
+    margin: 0 auto; /* Centers the div horizontally */
+    padding: 0rem; /* Adds some padding */
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: rgb(0, 0, 220);
+    text-align: center; /* Centers the title */
+}
+
+.subtitle1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: rgb(0, 0, 220);
+}
+
+p {
+    text-align: justify; /* Justifies paragraph text */
+    color: rgb(100, 100, 100)
+}
+
+/* A think horizontal rule */
+hr {
+    border: 0;
+    height: 1px;
+    background: rgb(0, 0, 0);
+    margin: 0 0;
+}
+
+/* Ensure the table fits within the main content */
+.blog-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.9rem; /* Make it slightly compact */
+}
+
+/* Table headers */
+.blog-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 2px solid #ddd;
+}
+
+/* Table cells */
+.blog-table td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Add hover effect to rows */
+.blog-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Styling for links in the table */
+.blog-table a {
+    text-decoration: none;
+    color: rgb(0, 0, 220);
+    font-weight: 500;
+}
+
+.blog-table a:hover {
+    text-decoration: underline;
+}
+
+.blog-post {
+    width: 60%;
+    margin: 0 auto;
+}
+
+.post-head-link {
+    font-size: 0.8rem;
+    display: inline-block; /* Ensures padding and margins apply properly */
+    background-color: rgb(0, 0, 220); /* Bootstrap-like blue */
+    color: white; /* Text color */
+    padding: 10px 20px; /* Adjust padding as needed */
+    border-radius: 25px; /* Makes the edges rounded */
+    text-decoration: none; /* Remove underline */
+    font-weight: bold; /* Make text bold */
+    text-align: center; /* Center text */
+    transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.post-head-link:hover {
+    background-color: #ffffff; /* Darker blue on hover */
+    color: rgb(0, 0, 220); /* Text color */
+}
+
+.post-title {
+    font-size: 1.5rem;
+    text-align: left;
+    font-weight: 700;
+    color: rgb(0, 0, 220);
+}
+
+.post-subtitle {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 1.2rem;
+    text-align: left;
+    font-weight: 700;
+    color: rgb(0, 0, 220);
+}
+
+.post-subsubtitle {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 1.0rem;
+    text-align: left;
+    font-weight: 700;
+    line-height: 1.0;   /* Line spacing */
+    margin: 10px 5px 0px 0px;    /* Add space above and below */
+    color: rgb(0, 0, 220);
+}
+
+.post-meta {
+    text-align: left;
+    color: rgb(128, 128, 128);
+    font-size:0.75em;
+     /* Reduce top margin */
+    margin: -1em 0 0 0;
+}
+
+.post-content {
+    font-family:  'Inter', 'Roboto', 'Comfortaa', sans-serif;
+    font-weight: 300; /* Light */
+    text-align: justify;
+    color: rgb(0, 0, 0);
+    font-size: 1rem;
+    /* Line spacing */
+    line-height: 1.5;
+}
+
+.back-button {
+    display: block;
+    text-align: center;
+    color: rgb(0, 0, 220);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    text-decoration: underline;
+}
+
+.emphasized {
+    font-weight: 200; /* Make it bold */
+    color: rgb(0, 0, 220); /* Use the red theme color */
+}
+
+.question-box {
+    font-family: 'Comfortaa', sans-serif;
+    font-size: 0.75em;
+    color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 200, 0.05);
+    padding: 1px;
+    border-left: 5px solid rgb(0, 0, 220);
+    margin: 0px 0; /* Add space above and below */
+    border-radius: 5px; /* Rounded edges */
+}
+
+#fig3-2LA-container {
+    display: flex;          /* Enables flexbox layout */
+    align-items: center;    /* Align items vertically */
+}
+
+#fig3-2LA-controls {
+    display: flex;
+    flex-direction: column; /* Stack sliders vertically */
+    margin-right: 20px;     /* Add some space between controls and SVG */
+}
+
+label[for^="fig3-2LA-"] {
+    display: inline-block;
+    width: 70px;  /* Adjust as needed */
+    text-align: right;
+    font-family: monospace; /* Ensures equal spacing */
+    font-size: 0.75em;
+}
+
+#fig3-2LA-svg-container3 {
+    flex-grow: 1;           /* Allows SVG to take up remaining space */
+}
+
+#fig4-3LA-container {
+    display: flex;          /* Enables flexbox layout */
+    align-items: center;    /* Align items vertically */
+}
+
+#fig4-3LA-controls {
+    display: flex;
+    flex-direction: column; /* Stack sliders vertically */
+    margin-right: 20px;     /* Add some space between controls and SVG */
+}
+
+label[for^="fig4-3LA-"] {
+    display: inline-block;
+    width: 70px;  /* Adjust as needed */
+    text-align: right;
+    font-family: monospace; /* Ensures equal spacing */
+    font-size: 0.75em;
+}
+
+#fig4-3LA-svg-container3 {
+    flex-grow: 1;           /* Allows SVG to take up remaining space */
+}
+
+.example-box {
+    border-left: 2px solid rgb(0, 0, 220); /* Adds a colored left border */
+    background: #f9f9f9; /* Light gray background */
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    margin: 2px;
+    border-radius: 20px; /* Rounded corners */
+    font-family: 'Inter', 'Roboto', 'Comfortaa', sans-serif;
+    font-size: 0.85em;
+}
+
+.inline-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: list-counter;
+    color: rgb(100, 100, 100);
+}
+
+.inline-list li {
+    display: inline;
+    counter-increment: list-counter;
+}
+
+.inline-list li::before {
+    content: "(" counter(list-counter, lower-alpha) ") ";
+}
+

@@ -1,0 +1,23 @@
+{
+  "name": "repairing-broken-movements",
+  "version": "1.0.0",
+  "main": ".eleventy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biorehab/repairing_broken_movements.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/biorehab/repairing_broken_movements/issues"
+  },
+  "homepage": "https://github.com/biorehab/repairing_broken_movements#readme",
+  "description": "",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0"
+  }
+}

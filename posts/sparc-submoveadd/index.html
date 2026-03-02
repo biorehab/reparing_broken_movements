@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARC: Movement Smoothness Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --text: #1a1a1a;
+    --text-muted: #6b6560;
+    --blue: #1a5fa8;
+    --red: #b83232;
+    --green: #2a7a3a;
+    --orange: #c47800;
+    --accent: #1a5fa8;
+    --font-serif: "Georgia", "Times New Roman", serif;
+    --font-mono: "Menlo", "Consolas", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-serif); font-size: 16px; line-height: 1.7; }
+  .page-wrapper { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color 0.15s, border-color 0.15s; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 36px; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); background: #eef3fb; padding: 3px 10px; border-radius: 2px; margin-bottom: 14px; }
+  h1 { font-size: 28px; font-weight: normal; line-height: 1.3; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .subtitle { font-size: 15px; color: var(--text-muted); font-style: italic; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .description { margin-bottom: 28px; }
+  .description p { margin-bottom: 12px; font-size: 15px; color: #2a2a2a; }
+  .description p:last-child { margin-bottom: 0; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0 28px; }
+  @media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 18px; }
+  .info-card h3 { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+  .info-card p { font-size: 14px; line-height: 1.5; color: #333; }
+  .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px 28px; margin-bottom: 28px; }
+  .controls h2 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 20px; }
+  .slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-label { font-size: 14px; min-width: 260px; color: #333; }
+  .slider-label em { font-style: normal; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
+  input[type=range] { -webkit-appearance: none; flex: 1; height: 4px; background: #ddd; border-radius: 2px; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .slider-value { font-family: var(--font-mono); font-size: 14px; min-width: 48px; text-align: right; color: var(--accent); font-weight: bold; }
+  .sparc-readout { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 28px; }
+  .sparc-main { padding: 18px 24px; border-right: 1px solid var(--border); flex: 0 0 auto; }
+  .sparc-main .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .sparc-main .value { font-size: 32px; font-family: var(--font-mono); color: var(--accent); font-weight: bold; }
+  .sparc-stats { display: flex; flex: 1; }
+  .stat { flex: 1; padding: 18px 20px; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .stat .value { font-size: 20px; font-family: var(--font-mono); color: #333; }
+  .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px 16px; margin-bottom: 20px; }
+  .chart-title { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 13px; color: #555; margin-bottom: 14px; font-style: italic; }
+  svg { display: block; width: 100%; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 24px; height: 2px; display: inline-block; }
+  .output-explainer { margin-top: 32px; }
+  .output-explainer h2 { font-size: 16px; font-weight: bold; margin-bottom: 14px; }
+  .output-explainer dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 20px; }
+  .output-explainer dt { font-family: var(--font-mono); font-size: 13px; color: var(--accent); padding-top: 2px; white-space: nowrap; }
+  .output-explainer dd { font-size: 14px; line-height: 1.6; color: #333; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: var(--text-muted); text-decoration: underline; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <a class="back-link" href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">← Back to the full article on Substack</a>
+
+  <header>
+    <div class="tag">Interactive Simulation</div>
+    <h1>SPARC: How Movement Smoothness is Measured</h1>
+    <p class="subtitle">Companion simulation for the article on the SPARC measure of movement smoothness</p>
+  </header>
+
+  <hr class="divider">
+
+  <div class="description">
+    <p>Human movements are often composed of several smaller <em>submovements</em> — brief velocity pulses that combine to produce the overall motion. A healthy, well-practised movement tends to be dominated by a single smooth submovement. Movements impaired by neurological conditions, fatigue, or inexperience often show multiple submovements, producing a bumpier velocity profile.</p>
+    <p>SPARC (Spectral Arc Length) quantifies this smoothness by examining how spread out the movement's frequency content is. A smooth single-submovement has a compact, tidy spectrum; a multi-submovement movement spreads energy to higher frequencies, lengthening the spectral arc — and making SPARC more negative.</p>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Purpose of this simulation</h3>
+      <p>See directly how adding a second submovement changes both the velocity profile and the Fourier spectrum, and watch the SPARC value respond in real time.</p>
+    </div>
+    <div class="info-card">
+      <h3>How to use it</h3>
+      <p>Drag the two sliders. The <strong>interval</strong> slider moves the second submovement later in time. The <strong>amplitude</strong> slider controls how large it is relative to the first. Set amplitude to 0 for a perfectly smooth single-submovement baseline.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="controls">
+    <h2>Sliders</h2>
+    <div class="slider-row">
+      <span class="slider-label">Inter-submovement interval &nbsp;<em>(s)</em></span>
+      <input type="range" id="isi-slider" min="0.05" max="0.70" step="0.01" value="0.30">
+      <span class="slider-value" id="isi-val">0.30</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">Amplitude of 2nd submovement &nbsp;<em>(relative to 1st)</em></span>
+      <input type="range" id="amp-slider" min="0.00" max="1.50" step="0.01" value="0.50">
+      <span class="slider-value" id="amp-val">0.50</span>
+    </div>
+  </div>
+
+  <div class="sparc-readout">
+    <div class="sparc-main">
+      <div class="label">SPARC</div>
+      <div class="value" id="sparc-val">—</div>
+    </div>
+    <div class="sparc-stats">
+      <div class="stat">
+        <div class="label">Duration D</div>
+        <div class="value" id="dur-val">—</div>
+      </div>
+      <div class="stat">
+        <div class="label">Cutoff f<sub>c</sub></div>
+        <div class="value" id="fc-val">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-title">Velocity Profile</div>
+    <div class="chart-subtitle">Raw velocity of the two-submovement movement</div>
+    <svg id="chart-vel" height="200"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw velocity</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#aaa;height:1px;border-top:1px dashed #aaa"></span> Movement onset / offset</div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-title">Normalised Velocity — what SPARC sees</div>
+    <div class="chart-subtitle">v&#770;(t) = v(t) / (v<sub>peak</sub> &times; D)</div>
+    <svg id="chart-norm" height="180"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--red)"></span> Normalised velocity v&#770;(t)</div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-title">Fourier Amplitude Spectrum</div>
+    <div class="chart-subtitle">Frequency content of v&#770;(t), normalised to DC. SPARC = &minus;arc length up to f<sub>c</sub></div>
+    <svg id="chart-spec" height="220"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V&#770;(f)|</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--orange)"></span> f<sub>c</sub> cutoff (5% of DC)</div>
+      <div class="legend-item"><span style="width:14px;height:14px;background:var(--green);opacity:0.2;display:inline-block;border-radius:2px"></span> Arc length region</div>
+    </div>
+  </div>
+
+  <div class="output-explainer">
+    <h2>What the outputs mean</h2>
+    <dl>
+      <dt>SPARC</dt>
+      <dd>Spectral Arc Length. Always negative — <strong>closer to 0 means smoother</strong>. A single Gaussian submovement yields a value near &minus;1 to &minus;2. Multiple submovements push it more negative. The exact value depends on movement duration and spectral shape.</dd>
+      <dt>Duration D</dt>
+      <dd>Time between movement onset and offset, detected where velocity exceeds 5% of its peak. When you push the second submovement later, D increases — stretching the normalised velocity and directly affecting SPARC.</dd>
+      <dt>Cutoff f<sub>c</sub></dt>
+      <dd>The highest frequency included in the SPARC calculation — the frequency beyond which the spectrum stays below 5% of its DC value. A multi-submovement movement has energy at higher frequencies, so f<sub>c</sub> grows, lengthening the arc.</dd>
+    </dl>
+  </div>
+
+  <footer>
+    <span>Movement Science Club</span>
+    <a href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
+  </footer>
+
+</div>
+<script>
+function computeSignal(isi, amp2) {
+  const N = 512, T = 2.0, dt = T / N, fs = 1 / dt;
+  const sigma = 0.07, mu1 = 0.4, mu2 = mu1 + isi;
+  const t = [], v = [];
+  for (let i = 0; i < N; i++) {
+    const ti = i * dt;
+    t.push(ti);
+    v.push(Math.exp(-0.5*((ti-mu1)/sigma)**2) + amp2*Math.exp(-0.5*((ti-mu2)/sigma)**2));
+  }
+  const vmax = Math.max(...v), threshold = 0.05 * vmax;
+  let onset = 0, offset = N - 1;
+  for (let i = 0; i < N; i++) { if (v[i] > threshold) { onset = i; break; } }
+  for (let i = N-1; i >= 0; i--) { if (v[i] > threshold) { offset = i; break; } }
+  const duration = (offset - onset) * dt;
+  const vn = v.map(vi => vi / (vmax * duration));
+  const Nhalf = Math.floor(N/2)+1;
+  const freqs = [], mag = [];
+  for (let k = 0; k < Nhalf; k++) {
+    freqs.push(k * fs / N);
+    let re = 0, im = 0;
+    const angle = -2*Math.PI*k/N;
+    for (let n = 0; n < N; n++) { re += vn[n]*Math.cos(angle*n); im += vn[n]*Math.sin(angle*n); }
+    mag.push(Math.sqrt(re*re+im*im)*dt);
+  }
+  const magPeak = mag[0];
+  const magNorm = mag.map(m => m/magPeak);
+  let fc_idx = 0;
+  for (let k = Nhalf-1; k >= 0; k--) { if (magNorm[k] >= 0.05) { fc_idx = k; break; } }
+  const fc = freqs[fc_idx];
+  const df = fs/N;
+  let arcLen = 0;
+  for (let k = 1; k <= fc_idx; k++) { const dv=(magNorm[k]-magNorm[k-1])/df; arcLen+=Math.sqrt(1+dv*dv)*df; }
+  return { t, v, vn, freqs, magNorm, fc, fc_idx, sparc: -arcLen, vmax, duration, onset, offset, N, dt, Nhalf };
+}
+
+const margin = { top: 12, right: 20, bottom: 40, left: 52 };
+
+function getW(id) {
+  return document.getElementById(id).getBoundingClientRect().width - margin.left - margin.right;
+}
+
+function initChart(id, height) {
+  const h = height - margin.top - margin.bottom;
+  const g = d3.select('#'+id).append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+  return { g, h };
+}
+
+const { g: gV, h: hV } = initChart('chart-vel', 200);
+const { g: gN, h: hN } = initChart('chart-norm', 180);
+const { g: gS, h: hS } = initChart('chart-spec', 220);
+
+function mkAxis(g, h, xLabel, yLabel) {
+  const xAx = g.append('g').attr('transform', `translate(0,${h})`);
+  const yAx = g.append('g');
+  g.append('text').attr('transform','rotate(-90)').attr('x',-h/2).attr('y',-40)
+   .attr('text-anchor','middle').attr('font-size',11).attr('font-family','Menlo,Consolas,monospace')
+   .attr('fill','#6b6560').text(yLabel);
+  const xLbl = g.append('text').attr('y', h+32).attr('text-anchor','middle')
+   .attr('font-size',11).attr('font-family','Menlo,Consolas,monospace').attr('fill','#6b6560').text(xLabel);
+  return { xAx, yAx, xLbl };
+}
+
+const axV = mkAxis(gV, hV, 'time (s)', 'velocity (a.u.)');
+const axN = mkAxis(gN, hN, 'time (s)', 'v\u0302(t)');
+const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
+
+const pathV = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
+const onsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
+const offsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
+const pathN = gN.append('path').attr('fill','none').attr('stroke','#b83232').attr('stroke-width',2.5);
+const areaS = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
+const pathS = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
+const ruleFc = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
+const ruleT = gS.append('line').attr('stroke','#c47800').attr('stroke-dasharray','5,3').attr('stroke-width',1.5);
+
+function styleAxis(sel) {
+  sel.selectAll('text').style('font-size','11px').style('font-family','Menlo,Consolas,monospace');
+  sel.selectAll('.domain,.tick line').attr('stroke','#ccc');
+}
+
+function render() {
+  const isi = +document.getElementById('isi-slider').value;
+  const amp2 = +document.getElementById('amp-slider').value;
+  document.getElementById('isi-val').textContent = isi.toFixed(2);
+  document.getElementById('amp-val').textContent = amp2.toFixed(2);
+  const s = computeSignal(isi, amp2);
+  document.getElementById('sparc-val').textContent = s.sparc.toFixed(2);
+  document.getElementById('dur-val').textContent = s.duration.toFixed(3)+' s';
+  document.getElementById('fc-val').textContent = s.fc.toFixed(1)+' Hz';
+
+  const wV = getW('chart-vel'), wN = getW('chart-norm'), wS = getW('chart-spec');
+
+  // Velocity
+  const xV = d3.scaleLinear().domain([0,2]).range([0,wV]);
+  const yV = d3.scaleLinear().domain([0, d3.max(s.v)*1.1]).range([hV,0]);
+  axV.xAx.call(d3.axisBottom(xV).ticks(8).tickSize(3)); styleAxis(axV.xAx);
+  axV.yAx.call(d3.axisLeft(yV).ticks(4).tickSize(3)); styleAxis(axV.yAx);
+  axV.xLbl.attr('x', wV/2);
+  pathV.attr('d', d3.line().x((_,i)=>xV(s.t[i])).y(d=>yV(d)).curve(d3.curveBasis)(s.v));
+  onsetL.attr('x1',xV(s.onset*s.dt)).attr('x2',xV(s.onset*s.dt)).attr('y1',0).attr('y2',hV);
+  offsetL.attr('x1',xV(s.offset*s.dt)).attr('x2',xV(s.offset*s.dt)).attr('y1',0).attr('y2',hV);
+
+  // Norm
+  const xN = d3.scaleLinear().domain([0,2]).range([0,wN]);
+  const yN = d3.scaleLinear().domain([0, d3.max(s.vn)*1.1]).range([hN,0]);
+  axN.xAx.call(d3.axisBottom(xN).ticks(8).tickSize(3)); styleAxis(axN.xAx);
+  axN.yAx.call(d3.axisLeft(yN).ticks(4).tickSize(3)); styleAxis(axN.yAx);
+  axN.xLbl.attr('x', wN/2);
+  pathN.attr('d', d3.line().x((_,i)=>xN(s.t[i])).y(d=>yN(d)).curve(d3.curveBasis)(s.vn));
+
+  // Spectrum
+  const fMax = 20;
+  const ci = s.freqs.findIndex(f=>f>fMax);
+  const pts = s.freqs.slice(0,ci).map((f,i)=>({f, m: s.magNorm[i]}));
+  const xS = d3.scaleLinear().domain([0,fMax]).range([0,wS]);
+  const yS = d3.scaleLinear().domain([0,1.05]).range([hS,0]);
+  axS.xAx.call(d3.axisBottom(xS).ticks(8).tickSize(3)); styleAxis(axS.xAx);
+  axS.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3)); styleAxis(axS.yAx);
+  axS.xLbl.attr('x', wS/2);
+  pathS.attr('d', d3.line().x(d=>xS(d.f)).y(d=>yS(d.m)).curve(d3.curveBasis)(pts));
+  areaS.attr('d', d3.area().x(d=>xS(d.f)).y0(yS(0)).y1(d=>yS(d.m)).curve(d3.curveBasis)(pts.filter(d=>d.f<=s.fc)));
+  ruleFc.attr('x1',xS(s.fc)).attr('x2',xS(s.fc)).attr('y1',0).attr('y2',hS);
+  ruleT.attr('x1',0).attr('x2',xS(fMax)).attr('y1',yS(0.05)).attr('y2',yS(0.05));
+}
+
+document.getElementById('isi-slider').addEventListener('input', render);
+document.getElementById('amp-slider').addEventListener('input', render);
+window.addEventListener('resize', render);
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

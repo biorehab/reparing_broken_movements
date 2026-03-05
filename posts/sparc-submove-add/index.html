@@ -7,27 +7,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <style>
   :root {
-    --bg: #fafaf7;
-    --surface: #ffffff;
-    --border: #e0ddd6;
-    --text: #1a1a1a;
-    --text-muted: #6b6560;
-    --blue: #1a5fa8;
-    --red: #b83232;
-    --green: #2a7a3a;
-    --orange: #c47800;
+    --bg: #fafaf7; --surface: #ffffff; --border: #e0ddd6;
+    --text: #1a1a1a; --text-muted: #6b6560;
+    --blue: #1a5fa8; --red: #b83232; --green: #2a7a3a; --orange: #c47800;
     --accent: #1a5fa8;
-    --font-serif: "Georgia", "Times New Roman", serif;
-    --font-mono: "Menlo", "Consolas", monospace;
+    --font-serif: "Georgia","Times New Roman",serif;
+    --font-mono: "Menlo","Consolas",monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font-serif); font-size: 16px; line-height: 1.7; }
   .page-wrapper { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
-  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color 0.15s, border-color 0.15s; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color .15s, border-color .15s; }
   .back-link:hover { color: var(--accent); border-color: var(--accent); }
   header { margin-bottom: 36px; }
-  .tag { display: inline-block; font-size: 11px; font-family: var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); background: #eef3fb; padding: 3px 10px; border-radius: 2px; margin-bottom: 14px; }
-  h1 { font-size: 28px; font-weight: normal; line-height: 1.3; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: #eef3fb; padding: 3px 10px; border-radius: 2px; margin-bottom: 14px; }
+  h1 { font-size: 28px; font-weight: normal; line-height: 1.3; letter-spacing: -.01em; margin-bottom: 10px; }
   .subtitle { font-size: 15px; color: var(--text-muted); font-style: italic; }
   .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
   .description { margin-bottom: 28px; }
@@ -36,10 +30,10 @@
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0 28px; }
   @media (max-width: 560px) { .info-grid { grid-template-columns: 1fr; } }
   .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 16px 18px; }
-  .info-card h3 { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+  .info-card h3 { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 8px; }
   .info-card p { font-size: 14px; line-height: 1.5; color: #333; }
   .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px 28px; margin-bottom: 28px; }
-  .controls h2 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 20px; }
+  .controls h2 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 20px; }
   .slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
   .slider-row:last-child { margin-bottom: 0; }
   .slider-label { font-size: 14px; min-width: 260px; color: #333; }
@@ -49,15 +43,15 @@
   .slider-value { font-family: var(--font-mono); font-size: 14px; min-width: 48px; text-align: right; color: var(--accent); font-weight: bold; }
   .sparc-readout { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 28px; }
   .sparc-main { padding: 18px 24px; border-right: 1px solid var(--border); flex: 0 0 auto; }
-  .sparc-main .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .sparc-main .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
   .sparc-main .value { font-size: 32px; font-family: var(--font-mono); color: var(--accent); font-weight: bold; }
   .sparc-stats { display: flex; flex: 1; }
   .stat { flex: 1; padding: 18px 20px; border-right: 1px solid var(--border); }
   .stat:last-child { border-right: none; }
-  .stat .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .stat .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
   .stat .value { font-size: 20px; font-family: var(--font-mono); color: #333; }
   .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px 16px; margin-bottom: 20px; }
-  .chart-title { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+  .chart-title { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
   .chart-subtitle { font-size: 13px; color: #555; margin-bottom: 14px; font-style: italic; }
   svg { display: block; width: 100%; overflow: visible; }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
@@ -146,167 +140,130 @@
   </div>
 
   <div class="chart-panel">
-    <div class="chart-title">Normalised Velocity — what SPARC sees</div>
-    <div class="chart-subtitle">v&#770;(t) = v(t) / (v<sub>peak</sub> &times; D)</div>
+    <div class="chart-title">Normalised Velocity</div>
+    <div class="chart-subtitle">Velocity normalised by peak speed × duration, used as input to the FFT</div>
     <svg id="chart-norm" height="180"></svg>
-    <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--red)"></span> Normalised velocity v&#770;(t)</div>
-    </div>
   </div>
 
   <div class="chart-panel">
-    <div class="chart-title">Fourier Amplitude Spectrum</div>
-    <div class="chart-subtitle">Frequency content of v&#770;(t), normalised to DC. SPARC = &minus;arc length up to f<sub>c</sub></div>
+    <div class="chart-title">Normalised Fourier Spectrum</div>
+    <div class="chart-subtitle">Magnitude spectrum of the normalised velocity; shaded area = arc integrated up to f<sub>c</sub></div>
     <svg id="chart-spec" height="220"></svg>
     <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V&#770;(f)|</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--orange)"></span> f<sub>c</sub> cutoff (5% of DC)</div>
-      <div class="legend-item"><span style="width:14px;height:14px;background:var(--green);opacity:0.2;display:inline-block;border-radius:2px"></span> Arc length region</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V̂(f)|</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--orange)"></span> f<sub>c</sub> cutoff</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);opacity:.5"></span> 5% threshold</div>
     </div>
   </div>
 
   <div class="output-explainer">
-    <h2>What the outputs mean</h2>
+    <h2>Output glossary</h2>
     <dl>
       <dt>SPARC</dt>
-      <dd>Spectral Arc Length. Always negative — <strong>closer to 0 means smoother</strong>. A single Gaussian submovement yields a value near &minus;1 to &minus;2. Multiple submovements push it more negative. The exact value depends on movement duration and spectral shape.</dd>
-      <dt>Duration D</dt>
-      <dd>Time between movement onset and offset, detected where velocity exceeds 5% of its peak. When you push the second submovement later, D increases — stretching the normalised velocity and directly affecting SPARC.</dd>
-      <dt>Cutoff f<sub>c</sub></dt>
-      <dd>The highest frequency included in the SPARC calculation — the frequency beyond which the spectrum stays below 5% of its DC value. A multi-submovement movement has energy at higher frequencies, so f<sub>c</sub> grows, lengthening the arc.</dd>
+      <dd>Spectral Arc Length. Negative arc length of the normalised magnitude spectrum from 0 to f<sub>c</sub>. Less negative = smoother.</dd>
+      <dt>D</dt>
+      <dd>Movement duration, measured from the first to the last sample where speed exceeds 5 % of peak speed.</dd>
+      <dt>f<sub>c</sub></dt>
+      <dd>Frequency cutoff: the highest frequency at which the normalised spectrum still exceeds 5 % of its DC value. This caps the arc-length integral.</dd>
     </dl>
   </div>
 
   <footer>
-    <span>Movement Science Club</span>
+    <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
     <a href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
   </footer>
 
 </div>
-<script>
-function computeSignal(isi, amp2) {
-  const N = 512, T = 2.0, dt = T / N, fs = 1 / dt;
-  const sigma = 0.07, mu1 = 0.4, mu2 = mu1 + isi;
-  const t = [], v = [];
-  for (let i = 0; i < N; i++) {
-    const ti = i * dt;
-    t.push(ti);
-    v.push(Math.exp(-0.5*((ti-mu1)/sigma)**2) + amp2*Math.exp(-0.5*((ti-mu2)/sigma)**2));
-  }
-  const vmax = Math.max(...v), threshold = 0.05 * vmax;
-  let onset = 0, offset = N - 1;
-  for (let i = 0; i < N; i++) { if (v[i] > threshold) { onset = i; break; } }
-  for (let i = N-1; i >= 0; i--) { if (v[i] > threshold) { offset = i; break; } }
-  const duration = (offset - onset) * dt;
-  const vn = v.map(vi => vi / (vmax * duration));
-  const Nhalf = Math.floor(N/2)+1;
-  const freqs = [], mag = [];
-  for (let k = 0; k < Nhalf; k++) {
-    freqs.push(k * fs / N);
-    let re = 0, im = 0;
-    const angle = -2*Math.PI*k/N;
-    for (let n = 0; n < N; n++) { re += vn[n]*Math.cos(angle*n); im += vn[n]*Math.sin(angle*n); }
-    mag.push(Math.sqrt(re*re+im*im)*dt);
-  }
-  const magPeak = mag[0];
-  const magNorm = mag.map(m => m/magPeak);
-  let fc_idx = 0;
-  for (let k = Nhalf-1; k >= 0; k--) { if (magNorm[k] >= 0.05) { fc_idx = k; break; } }
-  const fc = freqs[fc_idx];
-  const df = fs/N;
-  let arcLen = 0;
-  for (let k = 1; k <= fc_idx; k++) { const dv=(magNorm[k]-magNorm[k-1])/df; arcLen+=Math.sqrt(1+dv*dv)*df; }
-  return { t, v, vn, freqs, magNorm, fc, fc_idx, sparc: -arcLen, vmax, duration, onset, offset, N, dt, Nhalf };
+<script type="module">
+import { gaussianSubmovement, computeSPARC, linspace } from '../../assets/sparc-core.js';
+import { initChartGroup, mkAxis, styleAxis, getInnerWidth } from '../../assets/sparc-core.js';
+
+// ---------------------------------------------------------------------------
+// Signal generation — two Gaussian submovements
+// ---------------------------------------------------------------------------
+const N = 512, T = 2.0, dt = T / N;
+const t = linspace(0, T - dt, N);
+
+function buildVelocity(isi, amp2) {
+  const sigma = 0.07, mu1 = 0.4;
+  const v1 = gaussianSubmovement(t, mu1,       sigma, 1.0);
+  const v2 = gaussianSubmovement(t, mu1 + isi, sigma, amp2);
+  return t.map((_, i) => v1[i] + v2[i]);
 }
 
+// ---------------------------------------------------------------------------
+// D3 chart setup
+// ---------------------------------------------------------------------------
 const margin = { top: 12, right: 20, bottom: 40, left: 52 };
 
-function getW(id) {
-  return document.getElementById(id).getBoundingClientRect().width - margin.left - margin.right;
-}
+const { g: gV, h: hV } = initChartGroup('chart-vel',  200, margin);
+const { g: gN, h: hN } = initChartGroup('chart-norm', 180, margin);
+const { g: gS, h: hS } = initChartGroup('chart-spec', 220, margin);
 
-function initChart(id, height) {
-  const h = height - margin.top - margin.bottom;
-  const g = d3.select('#'+id).append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-  return { g, h };
-}
-
-const { g: gV, h: hV } = initChart('chart-vel', 200);
-const { g: gN, h: hN } = initChart('chart-norm', 180);
-const { g: gS, h: hS } = initChart('chart-spec', 220);
-
-function mkAxis(g, h, xLabel, yLabel) {
-  const xAx = g.append('g').attr('transform', `translate(0,${h})`);
-  const yAx = g.append('g');
-  g.append('text').attr('transform','rotate(-90)').attr('x',-h/2).attr('y',-40)
-   .attr('text-anchor','middle').attr('font-size',11).attr('font-family','Menlo,Consolas,monospace')
-   .attr('fill','#6b6560').text(yLabel);
-  const xLbl = g.append('text').attr('y', h+32).attr('text-anchor','middle')
-   .attr('font-size',11).attr('font-family','Menlo,Consolas,monospace').attr('fill','#6b6560').text(xLabel);
-  return { xAx, yAx, xLbl };
-}
-
-const axV = mkAxis(gV, hV, 'time (s)', 'velocity (a.u.)');
-const axN = mkAxis(gN, hN, 'time (s)', 'v\u0302(t)');
+const axV = mkAxis(gV, hV, 'time (s)',       'velocity (a.u.)');
+const axN = mkAxis(gN, hN, 'time (s)',       'v\u0302(t)');
 const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
 
-const pathV = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
+const pathV  = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
 const onsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
-const offsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
-const pathN = gN.append('path').attr('fill','none').attr('stroke','#b83232').attr('stroke-width',2.5);
-const areaS = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
-const pathS = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
+const offstL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
+const pathN  = gN.append('path').attr('fill','none').attr('stroke','#b83232').attr('stroke-width',2.5);
+const areaS  = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
+const pathS  = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
 const ruleFc = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
-const ruleT = gS.append('line').attr('stroke','#c47800').attr('stroke-dasharray','5,3').attr('stroke-width',1.5);
+const ruleT  = gS.append('line').attr('stroke','#c47800').attr('stroke-dasharray','5,3').attr('stroke-width',1.5);
 
-function styleAxis(sel) {
-  sel.selectAll('text').style('font-size','11px').style('font-family','Menlo,Consolas,monospace');
-  sel.selectAll('.domain,.tick line').attr('stroke','#ccc');
-}
-
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
 function render() {
-  const isi = +document.getElementById('isi-slider').value;
+  const isi  = +document.getElementById('isi-slider').value;
   const amp2 = +document.getElementById('amp-slider').value;
   document.getElementById('isi-val').textContent = isi.toFixed(2);
   document.getElementById('amp-val').textContent = amp2.toFixed(2);
-  const s = computeSignal(isi, amp2);
+
+  const velocity = buildVelocity(isi, amp2);
+  const s = computeSPARC(velocity, dt);
+
   document.getElementById('sparc-val').textContent = s.sparc.toFixed(2);
-  document.getElementById('dur-val').textContent = s.duration.toFixed(3)+' s';
-  document.getElementById('fc-val').textContent = s.fc.toFixed(1)+' Hz';
+  document.getElementById('dur-val').textContent   = s.duration.toFixed(3) + ' s';
+  document.getElementById('fc-val').textContent    = s.fc.toFixed(1) + ' Hz';
 
-  const wV = getW('chart-vel'), wN = getW('chart-norm'), wS = getW('chart-spec');
+  const wV = getInnerWidth('chart-vel',  margin);
+  const wN = getInnerWidth('chart-norm', margin);
+  const wS = getInnerWidth('chart-spec', margin);
 
-  // Velocity
-  const xV = d3.scaleLinear().domain([0,2]).range([0,wV]);
-  const yV = d3.scaleLinear().domain([0, d3.max(s.v)*1.1]).range([hV,0]);
+  // — Velocity —
+  const xV = d3.scaleLinear().domain([0, T]).range([0, wV]);
+  const yV = d3.scaleLinear().domain([0, d3.max(velocity) * 1.1]).range([hV, 0]);
   axV.xAx.call(d3.axisBottom(xV).ticks(8).tickSize(3)); styleAxis(axV.xAx);
-  axV.yAx.call(d3.axisLeft(yV).ticks(4).tickSize(3)); styleAxis(axV.yAx);
-  axV.xLbl.attr('x', wV/2);
-  pathV.attr('d', d3.line().x((_,i)=>xV(s.t[i])).y(d=>yV(d)).curve(d3.curveBasis)(s.v));
-  onsetL.attr('x1',xV(s.onset*s.dt)).attr('x2',xV(s.onset*s.dt)).attr('y1',0).attr('y2',hV);
-  offsetL.attr('x1',xV(s.offset*s.dt)).attr('x2',xV(s.offset*s.dt)).attr('y1',0).attr('y2',hV);
+  axV.yAx.call(d3.axisLeft(yV).ticks(4).tickSize(3));   styleAxis(axV.yAx);
+  axV.xLbl.attr('x', wV / 2);
+  pathV.attr('d', d3.line().x((_, i) => xV(t[i])).y(d => yV(d)).curve(d3.curveBasis)(velocity));
+  onsetL.attr('x1', xV(s.onset * dt)).attr('x2', xV(s.onset * dt)).attr('y1', 0).attr('y2', hV);
+  offstL.attr('x1', xV(s.offset * dt)).attr('x2', xV(s.offset * dt)).attr('y1', 0).attr('y2', hV);
 
-  // Norm
-  const xN = d3.scaleLinear().domain([0,2]).range([0,wN]);
-  const yN = d3.scaleLinear().domain([0, d3.max(s.vn)*1.1]).range([hN,0]);
+  // — Normalised velocity —
+  const xN = d3.scaleLinear().domain([0, T]).range([0, wN]);
+  const yN = d3.scaleLinear().domain([0, d3.max(s.vNorm) * 1.1]).range([hN, 0]);
   axN.xAx.call(d3.axisBottom(xN).ticks(8).tickSize(3)); styleAxis(axN.xAx);
-  axN.yAx.call(d3.axisLeft(yN).ticks(4).tickSize(3)); styleAxis(axN.yAx);
-  axN.xLbl.attr('x', wN/2);
-  pathN.attr('d', d3.line().x((_,i)=>xN(s.t[i])).y(d=>yN(d)).curve(d3.curveBasis)(s.vn));
+  axN.yAx.call(d3.axisLeft(yN).ticks(4).tickSize(3));   styleAxis(axN.yAx);
+  axN.xLbl.attr('x', wN / 2);
+  pathN.attr('d', d3.line().x((_, i) => xN(t[i])).y(d => yN(d)).curve(d3.curveBasis)(s.vNorm));
 
-  // Spectrum
+  // — Spectrum —
   const fMax = 20;
-  const ci = s.freqs.findIndex(f=>f>fMax);
-  const pts = s.freqs.slice(0,ci).map((f,i)=>({f, m: s.magNorm[i]}));
-  const xS = d3.scaleLinear().domain([0,fMax]).range([0,wS]);
-  const yS = d3.scaleLinear().domain([0,1.05]).range([hS,0]);
+  const ci   = s.freqs.findIndex(f => f > fMax);
+  const pts  = s.freqs.slice(0, ci).map((f, i) => ({ f, m: s.magNorm[i] }));
+  const xS   = d3.scaleLinear().domain([0, fMax]).range([0, wS]);
+  const yS   = d3.scaleLinear().domain([0, 1.05]).range([hS, 0]);
   axS.xAx.call(d3.axisBottom(xS).ticks(8).tickSize(3)); styleAxis(axS.xAx);
-  axS.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3)); styleAxis(axS.yAx);
-  axS.xLbl.attr('x', wS/2);
-  pathS.attr('d', d3.line().x(d=>xS(d.f)).y(d=>yS(d.m)).curve(d3.curveBasis)(pts));
-  areaS.attr('d', d3.area().x(d=>xS(d.f)).y0(yS(0)).y1(d=>yS(d.m)).curve(d3.curveBasis)(pts.filter(d=>d.f<=s.fc)));
-  ruleFc.attr('x1',xS(s.fc)).attr('x2',xS(s.fc)).attr('y1',0).attr('y2',hS);
-  ruleT.attr('x1',0).attr('x2',xS(fMax)).attr('y1',yS(0.05)).attr('y2',yS(0.05));
+  axS.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3));   styleAxis(axS.yAx);
+  axS.xLbl.attr('x', wS / 2);
+  pathS.attr('d', d3.line().x(d => xS(d.f)).y(d => yS(d.m)).curve(d3.curveBasis)(pts));
+  areaS.attr('d', d3.area().x(d => xS(d.f)).y0(yS(0)).y1(d => yS(d.m)).curve(d3.curveBasis)(pts.filter(d => d.f <= s.fc)));
+  ruleFc.attr('x1', xS(s.fc)).attr('x2', xS(s.fc)).attr('y1', 0).attr('y2', hS);
+  ruleT.attr('x1', 0).attr('x2', xS(fMax)).attr('y1', yS(0.05)).attr('y2', yS(0.05));
 }
 
 document.getElementById('isi-slider').addEventListener('input', render);

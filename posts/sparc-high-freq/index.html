@@ -81,33 +81,44 @@
   <hr class="divider">
 
   <div class="description">
-    <p>A common misconception about the SPARC measure is that it quantifies smoothness through the <em>amount</em> of high frequency content in the Fourier spectrum of a movement's speed profile. The inherent assumption here is that high frequency content is a sign of poor smoothness. This intuition is not wrong, but it is incomplete. Smoothness can be deteriorated even without adding any new high frequency content to the movement.</p>
-    <p>This simulation adds a pure sinusoidal ripple directly to the speed profile of a single Gaussian submovement. Watch how the ripple's frequency appears as a spike in the spectrum — and how SPARC responds, even when the sinusoid's frequency is already within the base movement's bandwidth.</p>
+    <p>A common misconception about the SPARC measure is that it quantifies smoothness through the <em>amount</em> of high frequency content in the Fourier spectrum of a movement's speed profile. The inherent assumption here is that high frequency content is a sign of poor smoothness. While this intuition is not wrong, it is incomplete — adding high frequency content to a speed profile does deteriorate its smoothness, as demonstrated by this simulation.</p>
+    <p>This simulation adds to a clean Gaussian speed profile a high frequency signal with variable frequency and amplitude. Use the sliders to vary the sinusoidal signal's frequency and amplitude, and see how this impacts the spectrum and thus the SPARC value.</p>
   </div>
 
   <div class="info-grid">
     <div class="info-card">
       <h3>Purpose of this simulation</h3>
-      <p>Demonstrate how adding a high frequency sinusoidal ripple to a movement's speed profile shifts its Fourier spectrum, and how that changes the SPARC value.</p>
+      <p>Demonstrate how adding a Gaussian-enveloped sinusoidal component to a base movement's speed profile shifts its Fourier spectrum, and how that changes the SPARC value.</p>
     </div>
     <div class="info-card">
       <h3>How to use it</h3>
-      <p>Drag the two sliders. The <strong>frequency</strong> slider sets the frequency of the sinusoidal ripple in Hz. The <strong>amplitude</strong> slider controls how large the ripple is relative to the peak speed. Set amplitude to 0 for a perfectly smooth single-submovement baseline.</p>
+      <p>Drag the two sliders. The <strong>frequency</strong> slider sets the frequency of the sinusoidal component in Hz. The <strong>amplitude</strong> slider controls how large it is relative to the peak speed of the base. Set amplitude to 0 for the pure single-submovement baseline.</p>
     </div>
   </div>
 
   <hr class="divider">
 
+  <div class="chart-panel">
+    <div class="chart-title">Speed Profile</div>
+    <div class="chart-subtitle">Base Gaussian submovement + Gaussian-enveloped sinusoidal component</div>
+    <svg id="chart-vel" height="200"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#c97070"></span> Base Gaussian</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Combined speed</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ccc;height:1px;border-top:1px dashed #ccc"></span> Movement onset / offset</div>
+    </div>
+  </div>
+
   <div class="controls">
     <h2>Sliders</h2>
     <div class="slider-row">
-      <span class="slider-label">Ripple frequency &nbsp;<em>(Hz)</em></span>
-      <input type="range" id="freq-slider" min="2" max="18" step="0.5" value="8">
+      <span class="slider-label">Sinusoidal frequency &nbsp;<em>(Hz)</em></span>
+      <input type="range" id="freq-slider" min="3" max="18" step="0.5" value="8">
       <span class="slider-value" id="freq-val">8.0</span>
     </div>
     <div class="slider-row">
-      <span class="slider-label">Ripple amplitude &nbsp;<em>(relative to peak speed)</em></span>
-      <input type="range" id="amp-slider" min="0.00" max="0.50" step="0.01" value="0.20">
+      <span class="slider-label">Sinusoidal amplitude &nbsp;<em>(relative to peak speed)</em></span>
+      <input type="range" id="amp-slider" min="0.00" max="0.75" step="0.01" value="0.20">
       <span class="slider-value" id="amp-val">0.20</span>
     </div>
   </div>
@@ -130,22 +141,6 @@
   </div>
 
   <div class="chart-panel">
-    <div class="chart-title">Speed Profile</div>
-    <div class="chart-subtitle">Gaussian submovement with sinusoidal ripple added</div>
-    <svg id="chart-vel" height="200"></svg>
-    <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw speed</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#aaa;height:1px;border-top:1px dashed #aaa"></span> Movement onset / offset</div>
-    </div>
-  </div>
-
-  <div class="chart-panel">
-    <div class="chart-title">Normalised Speed</div>
-    <div class="chart-subtitle">Speed normalised by peak speed × duration, used as input to the FFT</div>
-    <svg id="chart-norm" height="180"></svg>
-  </div>
-
-  <div class="chart-panel">
     <div class="chart-title">Normalised Fourier Spectrum</div>
     <div class="chart-subtitle">Magnitude spectrum; shaded area = arc integrated up to f<sub>c</sub></div>
     <svg id="chart-spec" height="220"></svg>
@@ -155,19 +150,7 @@
       <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);opacity:.5"></span> 5% threshold</div>
     </div>
   </div>
-
-  <div class="output-explainer">
-    <h2>Output glossary</h2>
-    <dl>
-      <dt>SPARC</dt>
-      <dd>Spectral Arc Length. Negative arc length of the normalised magnitude spectrum from 0 to f<sub>c</sub>. Less negative = smoother.</dd>
-      <dt>D</dt>
-      <dd>Movement duration, measured from the first to the last sample where speed exceeds 5 % of peak speed.</dd>
-      <dt>f<sub>c</sub></dt>
-      <dd>Frequency cutoff: the highest frequency at which the normalised spectrum still exceeds 5 % of its DC value. This caps the arc-length integral.</dd>
-    </dl>
-  </div>
-
+  
   <footer>
     <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
     <a href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
@@ -175,24 +158,28 @@
 
 </div>
 <script type="module">
-import { gaussianSubmovement, computeSPARC, linspace } from './assets/sparc-core.js';
-import { initChartGroup, mkAxis, styleAxis, getInnerWidth } from './assets/sparc-core.js';
+import { gaussianSubmovement, computeSPARC, linspace,
+         initChartGroup, mkAxis, styleAxis, getInnerWidth } from '../../assets/sparc-core.js?v=2';
 
 // ---------------------------------------------------------------------------
-// Signal generation — Gaussian submovement + sinusoidal ripple
+// Signal generation — base Gaussian + Gaussian-enveloped sinusoidal component
 // ---------------------------------------------------------------------------
-const N = 512, T = 2.0, dt = T / N;
+const T = 1.5, dt = 0.01;
+const N = Math.floor(T / dt);
 const t = linspace(0, T - dt, N);
 
-function buildSpeed(freqHz, ampRipple) {
-  const sigma = 0.07, mu1 = 0.4;
-  const base = gaussianSubmovement(t, mu1, sigma, 1.0);
-  // Ripple is windowed by the base movement envelope so it doesn't extend beyond it
+// Base submovement parameters
+const MU_BASE = 0.5, SIGMA_BASE = 0.13;
+// AM-envelope Gaussian parameters (separate, slightly wider)
+const MU_AM = 0.5, SIGMA_AM = 0.13;
+
+function buildSpeed(freqHz, ampSine) {
+  const base    = gaussianSubmovement(t, MU_BASE, SIGMA_BASE, 1.0);
+  const amGauss = gaussianSubmovement(t, MU_AM,   SIGMA_AM,   1.0);
   const peakBase = Math.max(...base);
-  return t.map((ti, i) => {
-    const ripple = ampRipple * peakBase * Math.sin(2 * Math.PI * freqHz * ti) * (base[i] / peakBase);
-    return base[i] + ripple;
-  });
+  const amComp = t.map((ti, i) => ampSine * peakBase * Math.sin(2 * Math.PI * freqHz * ti) * amGauss[i]);
+  const combined = t.map((_, i) => base[i] + amComp[i]);
+  return { base, amComp, combined };
 }
 
 // ---------------------------------------------------------------------------
@@ -201,60 +188,53 @@ function buildSpeed(freqHz, ampRipple) {
 const margin = { top: 12, right: 20, bottom: 40, left: 52 };
 
 const { g: gV, h: hV } = initChartGroup('chart-vel',  200, margin);
-const { g: gN, h: hN } = initChartGroup('chart-norm', 180, margin);
 const { g: gS, h: hS } = initChartGroup('chart-spec', 220, margin);
 
 const axV = mkAxis(gV, hV, 'time (s)',       'speed (a.u.)');
-const axN = mkAxis(gN, hN, 'time (s)',       'v\u0302(t)');
 const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
 
-const pathV   = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
-const onsetL  = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
-const offsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
-const pathN   = gN.append('path').attr('fill','none').attr('stroke','#b83232').attr('stroke-width',2.5);
-const areaS   = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
-const pathS   = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
-const ruleFc  = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
-const ruleT   = gS.append('line').attr('stroke','#c47800').attr('stroke-dasharray','5,3').attr('stroke-width',1.5);
+const pathBase = gV.append('path').attr('fill','none').attr('stroke','#c97070').attr('stroke-width',2.0);
+const pathV    = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
+const onsetL   = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
+const offsetL  = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
+const areaS    = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
+const pathS    = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
+const ruleFc   = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
+const ruleT    = gS.append('line').attr('stroke','#c47800').attr('stroke-dasharray','5,3').attr('stroke-width',1.5);
 
 // ---------------------------------------------------------------------------
 // Render
 // ---------------------------------------------------------------------------
 function render() {
-  const freqHz   = +document.getElementById('freq-slider').value;
-  const ampRipple = +document.getElementById('amp-slider').value;
+  const freqHz  = +document.getElementById('freq-slider').value;
+  const ampSine = +document.getElementById('amp-slider').value;
   document.getElementById('freq-val').textContent = freqHz.toFixed(1);
-  document.getElementById('amp-val').textContent  = ampRipple.toFixed(2);
-
-  const speed = buildSpeed(freqHz, ampRipple);
-  const s = computeSPARC(speed, dt);
-
+  document.getElementById('amp-val').textContent  = ampSine.toFixed(2);
+  
+  const { base, amComp, combined } = buildSpeed(freqHz, ampSine);
+  const s = computeSPARC(combined, dt);
+  
   document.getElementById('sparc-val').textContent = s.sparc.toFixed(2);
   document.getElementById('dur-val').textContent   = s.duration.toFixed(3) + ' s';
   document.getElementById('fc-val').textContent    = s.fc.toFixed(1) + ' Hz';
-
+  
   const wV = getInnerWidth('chart-vel',  margin);
-  const wN = getInnerWidth('chart-norm', margin);
   const wS = getInnerWidth('chart-spec', margin);
-
+  
   // — Speed —
+  const yMin = 0;
+  const yMax = 1.8;
   const xV = d3.scaleLinear().domain([0, T]).range([0, wV]);
-  const yV = d3.scaleLinear().domain([0, d3.max(speed) * 1.15]).range([hV, 0]);
+  const yV = d3.scaleLinear().domain([yMin, yMax]).range([hV, 0]);
   axV.xAx.call(d3.axisBottom(xV).ticks(8).tickSize(3)); styleAxis(axV.xAx);
   axV.yAx.call(d3.axisLeft(yV).ticks(4).tickSize(3));   styleAxis(axV.yAx);
   axV.xLbl.attr('x', wV / 2);
-  pathV.attr('d', d3.line().x((_, i) => xV(t[i])).y(d => yV(d)).curve(d3.curveBasis)(speed));
+  pathBase.attr('d', d3.line().x((_, i) => xV(t[i])).y(d => yV(d)).curve(d3.curveBasis)(base));
+  pathV.attr('d',    d3.line().x((_, i) => xV(t[i])).y(d => yV(d)).curve(d3.curveBasis)(combined));
   onsetL.attr('x1',  xV(s.onset * dt)).attr('x2',  xV(s.onset * dt)).attr('y1', 0).attr('y2', hV);
   offsetL.attr('x1', xV(s.offset * dt)).attr('x2', xV(s.offset * dt)).attr('y1', 0).attr('y2', hV);
-
-  // — Normalised speed —
-  const xN = d3.scaleLinear().domain([0, T]).range([0, wN]);
-  const yN = d3.scaleLinear().domain([0, d3.max(s.vNorm) * 1.15]).range([hN, 0]);
-  axN.xAx.call(d3.axisBottom(xN).ticks(8).tickSize(3)); styleAxis(axN.xAx);
-  axN.yAx.call(d3.axisLeft(yN).ticks(4).tickSize(3));   styleAxis(axN.yAx);
-  axN.xLbl.attr('x', wN / 2);
-  pathN.attr('d', d3.line().x((_, i) => xN(t[i])).y(d => yN(d)).curve(d3.curveBasis)(s.vNorm));
-
+  
+  
   // — Spectrum —
   const fMax = 20;
   const ci   = s.freqs.findIndex(f => f > fMax);

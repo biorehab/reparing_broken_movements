@@ -181,7 +181,6 @@ export function computeSPARC(velocity, dt, {
   // 4. Normalise spectrum
   const magPeak = mag[0];
   const magNorm = mag.map(m => m / magPeak);
-  // Print the lenght of the mag array.
 
   // 5. Find fc
   const Nhalf = freqs.length;
@@ -196,7 +195,7 @@ export function computeSPARC(velocity, dt, {
   let arcLen = 0;
   for (let k = 1; k <= fc_idx; k++) {
     const dv = (magNorm[k] - magNorm[k - 1]) / df;
-    arcLen += Math.sqrt(1 + dv * dv) * df;
+    arcLen += Math.sqrt((1 / fc) * (1 / fc) + dv * dv) * df;
   }
 
   return { sparc: -arcLen, fc, duration, onset, offset, vPeak, vNorm, freqs, magNorm };

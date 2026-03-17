@@ -74,15 +74,14 @@
 
   <header>
     <div class="tag">Interactive Simulation</div>
-    <h1>SPARC: How Movement Smoothness is Measured</h1>
+    <h1>SPARC: Addition of Two Submovements</h1>
     <p class="subtitle">Companion simulation for the article on the SPARC measure of movement smoothness</p>
   </header>
 
   <hr class="divider">
 
   <div class="description">
-    <p>Human movements are often composed of several smaller <em>submovements</em> — brief velocity pulses that combine to produce the overall motion. A healthy, well-practised movement tends to be dominated by a single smooth submovement. Movements impaired by neurological conditions, fatigue, or inexperience often show multiple submovements, producing a bumpier velocity profile.</p>
-    <p>SPARC (Spectral Arc Length) quantifies this smoothness by examining how spread out the movement's frequency content is. A smooth single-submovement has a compact, tidy spectrum; a multi-submovement movement spreads energy to higher frequencies, lengthening the spectral arc — and making SPARC more negative.</p>
+    <p></p>
   </div>
 
   <div class="info-grid">
@@ -98,12 +97,22 @@
 
   <hr class="divider">
 
+  <div class="chart-panel">
+    <div class="chart-title">Velocity Profile</div>
+    <div class="chart-subtitle">Raw velocity of the two-submovement movement</div>
+    <svg id="chart-vel" height="200"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw velocity</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#aaa;height:1px;border-top:1px dashed #aaa"></span> Movement onset / offset</div>
+    </div>
+  </div>
+
   <div class="controls">
     <h2>Sliders</h2>
     <div class="slider-row">
       <span class="slider-label">Inter-submovement interval &nbsp;<em>(s)</em></span>
-      <input type="range" id="isi-slider" min="0.05" max="0.70" step="0.01" value="0.30">
-      <span class="slider-value" id="isi-val">0.30</span>
+      <input type="range" id="isi-slider" min="0.01" max="1.00" step="0.01" value="0.70">
+      <span class="slider-value" id="isi-val">0.70</span>
     </div>
     <div class="slider-row">
       <span class="slider-label">Amplitude of 2nd submovement &nbsp;<em>(relative to 1st)</em></span>
@@ -127,22 +136,6 @@
         <div class="value" id="fc-val">—</div>
       </div>
     </div>
-  </div>
-
-  <div class="chart-panel">
-    <div class="chart-title">Velocity Profile</div>
-    <div class="chart-subtitle">Raw velocity of the two-submovement movement</div>
-    <svg id="chart-vel" height="200"></svg>
-    <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw velocity</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#aaa;height:1px;border-top:1px dashed #aaa"></span> Movement onset / offset</div>
-    </div>
-  </div>
-
-  <div class="chart-panel">
-    <div class="chart-title">Normalised Velocity</div>
-    <div class="chart-subtitle">Velocity normalised by peak speed × duration, used as input to the FFT</div>
-    <svg id="chart-norm" height="180"></svg>
   </div>
 
   <div class="chart-panel">
@@ -185,7 +178,7 @@ const N = 512, T = 2.0, dt = T / N;
 const t = linspace(0, T - dt, N);
 
 function buildVelocity(isi, amp2) {
-  const sigma = 0.07, mu1 = 0.4;
+  const sigma = 0.15, mu1 = 0.4;
   const v1 = gaussianSubmovement(t, mu1,       sigma, 1.0);
   const v2 = gaussianSubmovement(t, mu1 + isi, sigma, amp2);
   return t.map((_, i) => v1[i] + v2[i]);
@@ -197,17 +190,14 @@ function buildVelocity(isi, amp2) {
 const margin = { top: 12, right: 20, bottom: 40, left: 52 };
 
 const { g: gV, h: hV } = initChartGroup('chart-vel',  200, margin);
-const { g: gN, h: hN } = initChartGroup('chart-norm', 180, margin);
 const { g: gS, h: hS } = initChartGroup('chart-spec', 220, margin);
 
 const axV = mkAxis(gV, hV, 'time (s)',       'velocity (a.u.)');
-const axN = mkAxis(gN, hN, 'time (s)',       'v\u0302(t)');
 const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
 
 const pathV  = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
 const onsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
 const offstL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
-const pathN  = gN.append('path').attr('fill','none').attr('stroke','#b83232').attr('stroke-width',2.5);
 const areaS  = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
 const pathS  = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
 const ruleFc = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
@@ -230,7 +220,6 @@ function render() {
   document.getElementById('fc-val').textContent    = s.fc.toFixed(1) + ' Hz';
 
   const wV = getInnerWidth('chart-vel',  margin);
-  const wN = getInnerWidth('chart-norm', margin);
   const wS = getInnerWidth('chart-spec', margin);
 
   // — Velocity —
@@ -242,14 +231,6 @@ function render() {
   pathV.attr('d', d3.line().x((_, i) => xV(t[i])).y(d => yV(d)).curve(d3.curveBasis)(velocity));
   onsetL.attr('x1', xV(s.onset * dt)).attr('x2', xV(s.onset * dt)).attr('y1', 0).attr('y2', hV);
   offstL.attr('x1', xV(s.offset * dt)).attr('x2', xV(s.offset * dt)).attr('y1', 0).attr('y2', hV);
-
-  // — Normalised velocity —
-  const xN = d3.scaleLinear().domain([0, T]).range([0, wN]);
-  const yN = d3.scaleLinear().domain([0, d3.max(s.vNorm) * 1.1]).range([hN, 0]);
-  axN.xAx.call(d3.axisBottom(xN).ticks(8).tickSize(3)); styleAxis(axN.xAx);
-  axN.yAx.call(d3.axisLeft(yN).ticks(4).tickSize(3));   styleAxis(axN.yAx);
-  axN.xLbl.attr('x', wN / 2);
-  pathN.attr('d', d3.line().x((_, i) => xN(t[i])).y(d => yN(d)).curve(d3.curveBasis)(s.vNorm));
 
   // — Spectrum —
   const fMax = 20;

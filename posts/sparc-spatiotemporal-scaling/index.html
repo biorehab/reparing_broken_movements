@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARC: Spatiotemporal Scaling Invariance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #ffffff; --border: #e0ddd6;
+    --text: #1a1a1a; --text-muted: #6b6560;
+    --blue: #1a5fa8; --red: #b83232; --green: #2a7a3a; --orange: #c47800;
+    --accent: #1a5fa8;
+    --font-serif: "Georgia","Times New Roman",serif;
+    --font-mono: "Menlo","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-serif); font-size: 16px; line-height: 1.7; }
+  .page-wrapper { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color .15s, border-color .15s; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 36px; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: #eef3fb; padding: 3px 10px; border-radius: 2px; margin-bottom: 14px; }
+  h1 { font-size: 28px; font-weight: normal; line-height: 1.3; letter-spacing: -.01em; margin-bottom: 10px; }
+  .subtitle { font-size: 15px; color: var(--text-muted); font-style: italic; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .description { margin-bottom: 28px; }
+  .description p { margin-bottom: 12px; font-size: 15px; color: #2a2a2a; }
+  .description p:last-child { margin-bottom: 0; }
+  .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px 28px; margin-bottom: 28px; }
+  .controls-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .controls-top h2 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 0; }
+  .btn-generate { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; background: var(--accent); color: #fff; border: none; border-radius: 3px; padding: 8px 18px; cursor: pointer; transition: background .15s; }
+  .btn-generate:hover { background: #154d8a; }
+  .slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-label { font-size: 14px; min-width: 260px; color: #333; }
+  .slider-label em { font-style: normal; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
+  input[type=range] { -webkit-appearance: none; flex: 1; height: 4px; background: #ddd; border-radius: 2px; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .slider-value { font-family: var(--font-mono); font-size: 14px; min-width: 48px; text-align: right; color: var(--accent); font-weight: bold; }
+  .sparc-readout { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 28px; }
+  .sparc-cell { padding: 18px 24px; border-right: 1px solid var(--border); flex: 1; }
+  .sparc-cell:last-child { border-right: none; }
+  .sparc-cell .label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
+  .sparc-cell .value { font-size: 24px; font-family: var(--font-mono); font-weight: bold; }
+  .sparc-cell.baseline .value { color: #999; }
+  .sparc-cell.scaled .value { color: var(--accent); }
+  .sparc-cell.fc-cell .value { font-size: 20px; color: #333; }
+  .fixed-params { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: 28px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; display: flex; gap: 24px; flex-wrap: wrap; }
+  .fixed-params span { white-space: nowrap; }
+  .fixed-params strong { color: #555; }
+  .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px 16px; margin-bottom: 20px; }
+  .chart-title { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 13px; color: #555; margin-bottom: 14px; font-style: italic; }
+  svg { display: block; width: 100%; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 24px; height: 2px; display: inline-block; }
+  .output-explainer { margin-top: 32px; }
+  .output-explainer h2 { font-size: 18px; font-weight: bold; margin-bottom: 14px; }
+  .output-explainer p { font-size: 15px; color: #2a2a2a; margin-bottom: 12px; }
+  .output-explainer p:last-child { margin-bottom: 0; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: var(--text-muted); text-decoration: underline; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <a class="back-link" href="https://siva82kb.substack.com/p/sparc-spectral-arc-length-measure" target="_blank">← Back to the full article on Substack</a>
+
+  <header>
+    <div class="tag">Interactive Simulation</div>
+    <h1>SPARC: Spatiotemporal Scaling Invariance</h1>
+    <p class="subtitle">Companion simulation for the article on the SPARC measure of movement smoothness</p>
+  </header>
+
+  <hr class="divider">
+
+  <div class="description">
+    <p>
+      A useful smoothness measure should remain unchanged when the same movement is performed
+      faster or slower, or with a larger or smaller range of motion — as long as its overall
+      shape stays the same. SPARC satisfies this property: it is invariant under both
+      <strong>amplitude scaling</strong> and <strong>temporal scaling</strong>.
+    </p>
+    <p>
+      Use this simulation to verify that claim. Generate a random movement, then
+      adjust the amplitude scale $\alpha$ and the duration scale $\beta$. The baseline and
+      scaled SPARC values are shown side by side — they should remain equal regardless of
+      how you move the sliders.
+    </p>
+    <p>
+      Amplitude scaling multiplies the speed profile by $\alpha$, making the movement cover
+      $\alpha$ times the original distance in the same amount of time. Temporal scaling stretches the
+      movement duration by $\beta$ while dividing the speed by $\beta$, so the total
+      displacement is preserved: $\int \alpha\,v(t/\beta)/\beta\;dt = \alpha\int v(u)\,du$.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <div class="chart-panel">
+    <div class="chart-title">Speed Profile</div>
+    <div class="chart-subtitle">Original (gray) and scaled (blue) speed profiles</div>
+    <svg id="chart-vel" height="200"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#bbb"></span> Original</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Scaled (&alpha;, &beta;)</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="controls-top">
+      <h2>Controls</h2>
+      <button class="btn-generate" id="btn-generate">Generate movement</button>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">$\alpha$ &nbsp;<em>(amplitude scale)</em></span>
+      <input type="range" id="alpha-slider" min="0.25" max="4.0" step="0.05" value="1.0">
+      <span class="slider-value" id="alpha-val">1.00</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-label">$\beta$ &nbsp;<em>(duration scale)</em></span>
+      <input type="range" id="beta-slider" min="0.25" max="4.0" step="0.05" value="1.0">
+      <span class="slider-value" id="beta-val">1.00</span>
+    </div>
+  </div>
+
+  <div class="sparc-readout">
+    <div class="sparc-cell baseline">
+      <div class="label">Baseline SPARC</div>
+      <div class="value" id="sparc-baseline">—</div>
+    </div>
+    <div class="sparc-cell scaled">
+      <div class="label">Scaled SPARC</div>
+      <div class="value" id="sparc-scaled">—</div>
+    </div>
+    <div class="sparc-cell fc-cell">
+      <div class="label">Cutoff f<sub>c</sub> (scaled)</div>
+      <div class="value" id="fc-val">—</div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-title">Normalised Fourier Spectrum</div>
+    <div class="chart-subtitle">Normalised magnitude spectrum of the original (gray) and scaled (green) speed profiles</div>
+    <svg id="chart-spec" height="220"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#bbb"></span> |V&#x0302;(f)| original</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V&#x0302;(f)| scaled</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#999;height:0;border-top:1.5px dashed #999"></span> f<sub>c</sub> original</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:transparent;height:0;border-top:1.5px dashed var(--blue)"></span> f<sub>c</sub> scaled</div>
+    </div>
+  </div>
+
+  <div class="output-explainer">
+    <h2>Why is SPARC invariant?</h2>
+    <p>
+      <strong>Amplitude scaling.</strong> Multiplying every sample of $v(t)$ by $\alpha$ scales the
+      entire spectrum by the same factor. Because SPARC normalises the spectrum so that its DC
+      value equals one, $\alpha$ cancels exactly and the normalised spectrum — and therefore
+      the arc length — is unchanged.
+    </p>
+    <p>
+      <strong>Temporal scaling.</strong> Stretching the movement by $\beta$ (and dividing speed by
+      $\beta$ to preserve displacement) compresses the frequency axis by $1/\beta$: every feature
+      that appeared at frequency $f$ now appears at $f/\beta$. At the same time, the upper limit of
+      integration $f_c$ is compressed by the same factor. The integrand's shape is identical, just
+      evaluated over a correspondingly compressed interval — so the arc length is unchanged.
+    </p>
+    <p>
+      <strong>In combination.</strong> The two effects are independent, so applying both simultaneously
+      leaves SPARC unchanged. This is why SPARC remains a reliable smoothness measure regardless of
+      the speed or range of motion with which the same movement is performed.
+    </p>
+  </div>
+
+  <footer>
+    <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
+    <a href="https://siva82kb.substack.com/p/sparc-spectral-arc-length-measure" target="_blank">Full article on Substack &rarr;</a>
+  </footer>
+
+</div>
+<script type="module">
+import { gaussianSubmovement, computeSPARC, linspace,
+         initChartGroup, mkAxis, styleAxis, getInnerWidth } from '../../assets/sparc-core.js?v=3';
+
+// ---------------------------------------------------------------------------
+// Signal generation — four random Gaussian submovements
+// ---------------------------------------------------------------------------
+const T_BASE = 2.0, dt = 0.01;
+const N_BASE = Math.floor(T_BASE / dt);
+const t_base = linspace(0, T_BASE - dt, N_BASE);
+
+let velocityOrig = null; // original speed profile
+
+function generateVelocity() {
+  const sigma = 0.13;
+  const mu1   = 0.40;
+  const mus   = [mu1];
+  const amps  = [1.0];
+  for (let i = 1; i < 4; i++) {
+    mus.push(mus[i - 1] + 0.10 + Math.random() * 0.35);
+    amps.push(0.3 + Math.random() * 0.7);
+  }
+  const combined = new Array(N_BASE).fill(0);
+  for (let k = 0; k < 4; k++) {
+    const sub = gaussianSubmovement(t_base, mus[k], sigma, amps[k]);
+    for (let i = 0; i < N_BASE; i++) combined[i] += sub[i];
+  }
+  return combined;
+}
+
+// ---------------------------------------------------------------------------
+// Fixed SPARC parameters
+// ---------------------------------------------------------------------------
+const SPARC_OPTS = { padFactor: 4, fcMax: 20, ampThreshold: 0.05, magThreshold: 0.05 };
+
+// ---------------------------------------------------------------------------
+// D3 chart setup
+// ---------------------------------------------------------------------------
+const margin = { top: 12, right: 20, bottom: 40, left: 52 };
+
+const { g: gV, h: hV } = initChartGroup('chart-vel',  200, margin);
+const { g: gS, h: hS } = initChartGroup('chart-spec', 220, margin);
+
+const axV = mkAxis(gV, hV, 'time (s)',       'speed (a.u.)');
+const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
+
+// Velocity: gray original then blue scaled (scaled drawn on top)
+const pathVOrig   = gV.append('path').attr('fill','none').attr('stroke','#bbb').attr('stroke-width',1.5);
+const pathVScaled = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
+
+// Spectrum: gray original then green scaled, then cutoff lines on top
+const pathSOrig    = gS.append('path').attr('fill','none').attr('stroke','#bbb').attr('stroke-width',1.5);
+const pathSScaled  = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
+const ruleFcOrig   = gS.append('line').attr('stroke','#999').attr('stroke-width',1.5).attr('stroke-dasharray','5,4');
+const ruleFcScaled = gS.append('line').attr('stroke','#1a5fa8').attr('stroke-width',1.5).attr('stroke-dasharray','5,4');
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+function render() {
+  if (!velocityOrig) return;
+
+  const alpha = +document.getElementById('alpha-slider').value;
+  const beta  = +document.getElementById('beta-slider').value;
+
+  document.getElementById('alpha-val').textContent = alpha.toFixed(2);
+  document.getElementById('beta-val').textContent  = beta.toFixed(2);
+
+  // Scaled signal: amplitude × alpha, time × beta (displacement preserved)
+  const dtScaled       = dt * beta;
+  const velocityScaled = velocityOrig.map(v => v * alpha / beta);
+  const tScaled        = t_base.map(ti => ti * beta);
+
+  // SPARC
+  const sOrig   = computeSPARC(velocityOrig,   dt,       SPARC_OPTS);
+  const sScaled = computeSPARC(velocityScaled,  dtScaled, SPARC_OPTS);
+
+  document.getElementById('sparc-baseline').textContent = sOrig.sparc.toFixed(5);
+  document.getElementById('sparc-scaled').textContent   = sScaled.sparc.toFixed(5);
+  document.getElementById('fc-val').textContent         = sScaled.fc.toFixed(2) + ' Hz';
+
+  const wV = getInnerWidth('chart-vel',  margin);
+  const wS = getInnerWidth('chart-spec', margin);
+
+  // ── Velocity chart ──────────────────────────────────────────────────────
+  const tMax  = Math.max(T_BASE, T_BASE * beta) * 1.05;
+  const vYMax = Math.max(d3.max(velocityOrig), d3.max(velocityScaled)) * 1.15;
+
+  const xV = d3.scaleLinear().domain([0, tMax]).range([0, wV]);
+  const yV = d3.scaleLinear().domain([0, vYMax]).range([hV, 0]);
+
+  axV.xAx.call(d3.axisBottom(xV).ticks(8).tickSize(3)); styleAxis(axV.xAx);
+  axV.yAx.call(d3.axisLeft(yV).ticks(4).tickSize(3));   styleAxis(axV.yAx);
+  axV.xLbl.attr('x', wV / 2);
+
+  pathVOrig.attr('d',
+    d3.line().x((_, i) => xV(t_base[i])).y(d => yV(d))(velocityOrig));
+  pathVScaled.attr('d',
+    d3.line().x((_, i) => xV(tScaled[i])).y(d => yV(d))(velocityScaled));
+
+  // ── Spectrum chart ───────────────────────────────────────────────────────
+  const fPlot = 15;
+
+  // Original spectrum — slice to fPlot
+  const ciO  = sOrig.freqs.findIndex(f => f > fPlot);
+  const ptsO = sOrig.freqs.slice(0, ciO < 0 ? undefined : ciO)
+                     .map((f, i) => ({ f, m: sOrig.magNorm[i] }));
+
+  // Scaled spectrum — slice to fPlot
+  const ciSc  = sScaled.freqs.findIndex(f => f > fPlot);
+  const ptsSc = sScaled.freqs.slice(0, ciSc < 0 ? undefined : ciSc)
+                       .map((f, i) => ({ f, m: sScaled.magNorm[i] }));
+
+  const xS = d3.scaleLinear().domain([0, fPlot]).range([0, wS]);
+  const yS = d3.scaleLinear().domain([0, 1.05]).range([hS, 0]);
+
+  axS.xAx.call(d3.axisBottom(xS).ticks(8).tickSize(3)); styleAxis(axS.xAx);
+  axS.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3));   styleAxis(axS.yAx);
+  axS.xLbl.attr('x', wS / 2);
+
+  pathSOrig.attr('d',
+    d3.line().x(d => xS(d.f)).y(d => yS(d.m))(ptsO));
+  pathSScaled.attr('d',
+    d3.line().x(d => xS(d.f)).y(d => yS(d.m))(ptsSc));
+
+  // Cutoff frequency markers
+  ruleFcOrig.attr('x1', xS(sOrig.fc)).attr('x2', xS(sOrig.fc))
+            .attr('y1', 0).attr('y2', hS);
+  ruleFcScaled.attr('x1', xS(sScaled.fc)).attr('x2', xS(sScaled.fc))
+              .attr('y1', 0).attr('y2', hS);
+}
+
+// ---------------------------------------------------------------------------
+// Event wiring
+// ---------------------------------------------------------------------------
+document.getElementById('btn-generate').addEventListener('click', () => {
+  velocityOrig = generateVelocity();
+  render();
+});
+
+document.getElementById('alpha-slider').addEventListener('input', render);
+document.getElementById('beta-slider').addEventListener('input', render);
+window.addEventListener('resize', render);
+
+// Generate an initial movement on load
+velocityOrig = generateVelocity();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

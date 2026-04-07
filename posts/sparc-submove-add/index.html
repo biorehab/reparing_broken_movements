@@ -70,7 +70,7 @@
 <body>
 <div class="page-wrapper">
 
-  <a class="back-link" href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">← Back to the full article on Substack</a>
+  <a class="back-link" href="https://siva82kb.substack.com/p/sparc-spectral-arc-length-measure/p/sparc-smoothness" target="_blank">← Back to the full article on Substack</a>
 
   <header>
     <div class="tag">Interactive Simulation</div>
@@ -80,14 +80,11 @@
 
   <hr class="divider">
 
-  <div class="description">
-    <p></p>
-  </div>
 
   <div class="info-grid">
     <div class="info-card">
       <h3>Purpose of this simulation</h3>
-      <p>See directly how adding a second submovement changes both the velocity profile and the Fourier spectrum, and watch the SPARC value respond in real time.</p>
+      <p>See directly how adding a second submovement changes both the speed profile and the Fourier spectrum, and watch the SPARC value respond in real time.</p>
     </div>
     <div class="info-card">
       <h3>How to use it</h3>
@@ -98,11 +95,11 @@
   <hr class="divider">
 
   <div class="chart-panel">
-    <div class="chart-title">Velocity Profile</div>
-    <div class="chart-subtitle">Raw velocity of the two-submovement movement</div>
+    <div class="chart-title">Speed Profile</div>
+    <div class="chart-subtitle">Speed profile combining two Gaussian submovements</div>
     <svg id="chart-vel" height="200"></svg>
     <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw velocity</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw speed</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#aaa;height:1px;border-top:1px dashed #aaa"></span> Movement onset / offset</div>
     </div>
   </div>
@@ -140,13 +137,19 @@
 
   <div class="chart-panel">
     <div class="chart-title">Normalised Fourier Spectrum</div>
-    <div class="chart-subtitle">Magnitude spectrum of the normalised velocity; shaded area = arc integrated up to f<sub>c</sub></div>
+    <div class="chart-subtitle">Magnitude spectrum of the normalised speed; shaded area = arc integrated up to f<sub>c</sub></div>
     <svg id="chart-spec" height="220"></svg>
     <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V̂(f)|</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ccc"></span> |V̂<sub>1</sub>(f)| single submovement</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V̂(f)| combined</div>
       <div class="legend-item"><span class="legend-swatch" style="background:var(--orange)"></span> f<sub>c</sub> cutoff</div>
       <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);opacity:.5"></span> 5% threshold</div>
     </div>
+  </div>
+
+  <div class="output-explainer">
+    <h2>Explanation</h2>
+    <p>Adding a second submovement creates interference in the Fourier spectrum, visible as dips at specific frequencies. Note that adding a second submovement does not introduce new high-frequency components; the magnitude spectrum of the combined movement is bounded above by the sum of the individual submovements' spectra.</p>
   </div>
 
   <div class="output-explainer">
@@ -157,13 +160,13 @@
       <dt>D</dt>
       <dd>Movement duration, measured from the first to the last sample where speed exceeds 5 % of peak speed.</dd>
       <dt>f<sub>c</sub></dt>
-      <dd>Frequency cutoff: the highest frequency at which the normalised spectrum still exceeds 5 % of its DC value. This caps the arc-length integral.</dd>
+      <dd>Frequency cutoff: the highest frequency at which the normalised spectrum exceeds 5% of its DC value. This caps the arc-length integral.</dd>
     </dl>
   </div>
 
   <footer>
     <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
-    <a href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
+    <a href="https://siva82kb.substack.com/p/sparc-spectral-arc-length-measure/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
   </footer>
 
 </div>
@@ -181,7 +184,8 @@ function buildVelocity(isi, amp2) {
   const sigma = 0.15, mu1 = 0.4;
   const v1 = gaussianSubmovement(t, mu1,       sigma, 1.0);
   const v2 = gaussianSubmovement(t, mu1 + isi, sigma, amp2);
-  return t.map((_, i) => v1[i] + v2[i]);
+  const velocity = t.map((_, i) => v1[i] + v2[i]);
+  return { v1, velocity };
 }
 
 // ---------------------------------------------------------------------------
@@ -192,12 +196,13 @@ const margin = { top: 12, right: 20, bottom: 40, left: 52 };
 const { g: gV, h: hV } = initChartGroup('chart-vel',  200, margin);
 const { g: gS, h: hS } = initChartGroup('chart-spec', 220, margin);
 
-const axV = mkAxis(gV, hV, 'time (s)',       'velocity (a.u.)');
+const axV = mkAxis(gV, hV, 'time (s)',       'speed (a.u.)');
 const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
 
 const pathV  = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
 const onsetL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
 const offstL = gV.append('line').attr('stroke','#aaa').attr('stroke-dasharray','4,3');
+const pathRef = gS.append('path').attr('fill','none').attr('stroke','#ccc').attr('stroke-width',1.5);
 const areaS  = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13);
 const pathS  = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
 const ruleFc = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
@@ -212,7 +217,7 @@ function render() {
   document.getElementById('isi-val').textContent = isi.toFixed(2);
   document.getElementById('amp-val').textContent = amp2.toFixed(2);
 
-  const velocity = buildVelocity(isi, amp2);
+  const { v1, velocity } = buildVelocity(isi, amp2);
   const s = computeSPARC(velocity, dt);
 
   document.getElementById('sparc-val').textContent = s.sparc.toFixed(2);
@@ -233,14 +238,18 @@ function render() {
   offstL.attr('x1', xV(s.offset * dt)).attr('x2', xV(s.offset * dt)).attr('y1', 0).attr('y2', hV);
 
   // — Spectrum —
-  const fMax = 20;
+  const s1   = computeSPARC(v1, dt);
+  const fMax = 10;
   const ci   = s.freqs.findIndex(f => f > fMax);
   const pts  = s.freqs.slice(0, ci).map((f, i) => ({ f, m: s.magNorm[i] }));
+  const ci1  = s1.freqs.findIndex(f => f > fMax);
+  const pts1 = s1.freqs.slice(0, ci1).map((f, i) => ({ f, m: s1.magNorm[i] }));
   const xS   = d3.scaleLinear().domain([0, fMax]).range([0, wS]);
   const yS   = d3.scaleLinear().domain([0, 1.05]).range([hS, 0]);
   axS.xAx.call(d3.axisBottom(xS).ticks(8).tickSize(3)); styleAxis(axS.xAx);
   axS.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3));   styleAxis(axS.yAx);
   axS.xLbl.attr('x', wS / 2);
+  pathRef.attr('d', d3.line().x(d => xS(d.f)).y(d => yS(d.m)).curve(d3.curveBasis)(pts1));
   pathS.attr('d', d3.line().x(d => xS(d.f)).y(d => yS(d.m)).curve(d3.curveBasis)(pts));
   areaS.attr('d', d3.area().x(d => xS(d.f)).y0(yS(0)).y1(d => yS(d.m)).curve(d3.curveBasis)(pts.filter(d => d.f <= s.fc)));
   ruleFc.attr('x1', xS(s.fc)).attr('x2', xS(s.fc)).attr('y1', 0).attr('y2', hS);

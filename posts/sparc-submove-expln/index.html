@@ -84,12 +84,12 @@
 <body>
 <div class="page-wrapper">
 
-  <a class="back-link" href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">← Back to the full article on Substack</a>
+  <a class="back-link" href="https://siva82kb.substack.com/p/sparc-spectral-arc-length-measure/p/sparc-smoothness" target="_blank">← Back to the full article on Substack</a>
 
   <header>
     <div class="tag">Interactive Simulation</div>
-    <h1>Spectral Interference due to Addition of Two Submovements</h1>
-    <p class="subtitle">Companion simulation explaining the spectral interference due to the addition of two submovements</p>
+    <h1>Spectral Interference due to the Addition of Two Submovements</h1>
+    <p class="subtitle">Companion simulation for the blog post on the SPARC measure of movement smoothness</p>
   </header>
 
   <hr class="divider">
@@ -102,8 +102,8 @@
     $$\hat{V}_1(f) = \sigma\sqrt{2\pi}\,\exp\!\left(-2\pi^2 \sigma^2 f^2\right) e^{-i 2\pi f \mu}$$
     When a second submovement $v_2(t) = a \cdot v_1(t - \Delta)$ is added, the combined spectrum is:
     $$\hat{V}(f) = \hat{V}_1(f)\left(1 + a\,e^{-i 2\pi f \Delta}\right)$$
-    The factor $\left|1 + a\,e^{-i 2\pi f \Delta}\right|$ is the one that leads to constructive and destructive interference at different frequencies, which modulates the magnitude spectrum of the movement speed profile. There is destructive interference at frequencies where $e^{-i 2\pi f \Delta} = -1$ and constructive interference where $e^{-i 2\pi f \Delta} = +1$. The phasor diagram at a given frequency $f$ shows the complex Fourier coefficients of the two submovements as vectors in the complex plane, and their vector sum gives the Fourier coefficient of the combined signal at that frequency. The length of the resultant total phasor is the value of the Fourier magnitude spectrum at that frequency.
- </p>
+    The factor $\left|1 + a\,e^{-i 2\pi f \Delta}\right|$ is the one that leads to constructive and destructive interference at different frequencies, which modulates the magnitude spectrum of the movement speed profile. There is destructive interference at frequencies where $e^{-i 2\pi f \Delta} = -1$ and constructive interference where $e^{-i 2\pi f \Delta} = +1$. Note that when $a = 1$, there can be perfect destructive interference resulting in zero magnitude; these are dips in the Fourier magnitude spectrum that go to zero. The phasor diagram at a given frequency $f$ shows the complex Fourier coefficients of the two submovements as vectors in the complex plane; their vector sum gives the combined Fourier coefficient, and its length equals the value of the magnitude spectrum at that frequency.
+    </p>
 
   </div>
 
@@ -114,7 +114,7 @@
     </div>
     <div class="info-card">
       <h3>How to use it</h3>
-      <p>Drag the two sliders. The <strong>interval</strong> slider moves the second submovement later in time. The <strong>amplitude</strong> slider controls how large it is relative to the first. Use the <strong>phasor frequency</strong> slider to select the frequency at which the phasor diagram is shown.</p>
+      <p>Drag the two sliders. The <strong>interval</strong> slider moves the second submovement later in time. The <strong>amplitude</strong> slider controls how large it is relative to the first. Click anywhere on the spectrum plot to select a frequency; the solid vertical line marks the selected frequency and the phasor diagram updates accordingly. The dashed line tracks the current mouse position over the spectrum.</p>
     </div>
   </div>
 
@@ -135,11 +135,11 @@
   </div>
 
   <div class="chart-panel">
-    <div class="chart-title">Velocity Profile</div>
-    <div class="chart-subtitle">Raw velocity of the two-submovement movement</div>
+    <div class="chart-title">Speed Profile</div>
+    <div class="chart-subtitle">Speed profile combining two Gaussian submovements</div>
     <svg id="chart-vel" height="200"></svg>
     <div class="legend">
-      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw velocity</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--blue)"></span> Raw speed</div>
       <div class="legend-item"><span class="legend-swatch" style="background:#aaa;height:1px;border-top:1px dashed #aaa"></span> Movement onset / offset</div>
     </div>
   </div>
@@ -152,7 +152,8 @@
       <div class="legend-item"><span class="legend-swatch" style="background:var(--green)"></span> |V̂(f)|</div>
       <div class="legend-item"><span class="legend-swatch" style="background:var(--orange)"></span> f<sub>c</sub> cutoff</div>
       <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);opacity:.5"></span> 5% threshold</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#999;border-top:2px dashed #999;height:0"></span> phasor freq</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#444"></span> selected frequency</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#bbb;border-top:2px dashed #bbb;height:0"></span> hover frequency</div>
     </div>
   </div>
 
@@ -160,9 +161,9 @@
     <div class="chart-title">Phasor Diagram</div>
     <div class="chart-subtitle">Complex Fourier coefficients at selected frequency</div>
     <div class="phasor-freq-row">
-      <span>f &nbsp;<em>(Hz)</em></span>
-      <input type="range" id="phasor-freq-slider" min="0" max="10" step="0.01" value="2.0">
+      <span>Selected frequency:</span>
       <span class="phasor-freq-val" id="phasor-freq-val">2.00</span>
+      <span><em>Hz &mdash; click on the spectrum to change</em></span>
     </div>
     <svg id="chart-phasor" height="320"></svg>
     <div class="legend">
@@ -174,12 +175,13 @@
 
   <div>
     <h2>Explanation of the output</h2>
-    <p>The Fourier transform is a linear transformation. The sum of two Gaussian submovements results in a combined Fourier spectrum that is the sum of the Fourier spectra of the individual submovements.</p>
+    <p>Because the Fourier transform is linear, the spectrum of the combined movement is the vector sum of the spectra of the two individual submovements at every frequency. The magnitude of this vector sum — visible in the spectrum plot — varies depending on the relative phase of the two phasors at that frequency.</p>
+    <p>At frequencies where the phasors are 180° out of phase, they cancel and the spectrum dips. At frequencies where they are in phase, they reinforce and the spectrum peaks. When the two submovements have equal amplitude ($a = 1$), the cancellation can be perfect, driving the spectrum to zero at those frequencies.</p>
   </div>
 
   <footer>
     <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
-    <a href="https://yoursubstack.substack.com/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
+    <a href="https://siva82kb.substack.com/p/sparc-spectral-arc-length-measure/p/sparc-smoothness" target="_blank">Full article on Substack &rarr;</a>
   </footer>
 
 </div>
@@ -220,7 +222,7 @@ const margin = { top: 12, right: 20, bottom: 40, left: 52 };
 const { g: gV, h: hV } = initChartGroup('chart-vel',  200, margin);
 const { g: gS, h: hS } = initChartGroup('chart-spec', 200, margin);
 
-const axV = mkAxis(gV, hV, 'time (s)',       'velocity (a.u.)');
+const axV = mkAxis(gV, hV, 'time (s)',       'speed (a.u.)');
 const axS = mkAxis(gS, hS, 'frequency (Hz)', '|V\u0302(f)|');
 
 const pathV  = gV.append('path').attr('fill','none').attr('stroke','#1a5fa8').attr('stroke-width',2.5);
@@ -230,8 +232,29 @@ const areaS  = gS.append('path').attr('fill','#2a7a3a').attr('fill-opacity',0.13
 const pathS  = gS.append('path').attr('fill','none').attr('stroke','#2a7a3a').attr('stroke-width',2.5);
 const ruleFc = gS.append('line').attr('stroke','#c47800').attr('stroke-width',2);
 const ruleT  = gS.append('line').attr('stroke','#c47800').attr('stroke-dasharray','5,3').attr('stroke-width',1.5);
-// Vertical marker on spectrum at chosen phasor frequency
-const rulePhF = gS.append('line').attr('stroke','#999').attr('stroke-dasharray','4,3').attr('stroke-width',1.5);
+// Spectrum frequency markers
+const ruleHover    = gS.append('line').attr('stroke','#bbb').attr('stroke-dasharray','4,3').attr('stroke-width',1).attr('pointer-events','none').attr('visibility','hidden');
+const ruleSelected = gS.append('line').attr('stroke','#444').attr('stroke-width',1.5).attr('pointer-events','none');
+// Transparent overlay to capture mouse events on the spectrum
+const specOverlay  = gS.append('rect').attr('fill','none').attr('pointer-events','all').style('cursor','crosshair');
+
+// State for interactive frequency selection
+let selectedFreq = 2.0;
+let currentFc    = 10;
+let xSscale      = d3.scaleLinear().domain([0, 10]).range([0, 1]); // updated each render
+
+specOverlay
+  .on('mousemove', function(event) {
+    const [mx] = d3.pointer(event);
+    const f = Math.max(0, Math.min(xSscale.invert(mx), currentFc));
+    ruleHover.attr('x1', xSscale(f)).attr('x2', xSscale(f)).attr('y1', 0).attr('y2', hS).attr('visibility', 'visible');
+  })
+  .on('mouseleave', () => ruleHover.attr('visibility', 'hidden'))
+  .on('click', function(event) {
+    const [mx] = d3.pointer(event);
+    selectedFreq = Math.max(0, Math.min(xSscale.invert(mx), currentFc));
+    render();
+  });
 
 // ---------------------------------------------------------------------------
 // Phasor chart setup
@@ -291,6 +314,8 @@ function render() {
   const ci   = s.freqs.findIndex(f => f > fMax);
   const pts  = s.freqs.slice(0, ci).map((f, i) => ({ f, m: s.magNorm[i] }));
   const xS   = d3.scaleLinear().domain([0, fMax]).range([0, wS]);
+  xSscale = xS; currentFc = s.fc;
+  specOverlay.attr('width', wS).attr('height', hS);
   const yS   = d3.scaleLinear().domain([0, 1.05]).range([hS, 0]);
   axS.xAx.call(d3.axisBottom(xS).ticks(5).tickSize(3)); styleAxis(axS.xAx);
   axS.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3));   styleAxis(axS.yAx);
@@ -300,19 +325,15 @@ function render() {
   ruleFc.attr('x1', xS(s.fc)).attr('x2', xS(s.fc)).attr('y1', 0).attr('y2', hS);
   ruleT.attr('x1', 0).attr('x2', xS(fMax)).attr('y1', yS(0.05)).attr('y2', yS(0.05));
 
-  // — Phasor frequency marker on spectrum —
-  const freqSlider = document.getElementById('phasor-freq-slider');
-  freqSlider.max = s.fc.toFixed(2);
-  const pFreq = Math.min(+freqSlider.value, s.fc);
-  freqSlider.value = pFreq;
-  document.getElementById('phasor-freq-val').textContent = pFreq.toFixed(2);
-  rulePhF.attr('x1', xS(Math.min(pFreq, fMax))).attr('x2', xS(Math.min(pFreq, fMax))).attr('y1', 0).attr('y2', hS);
+  // — Selected frequency marker on spectrum —
+  selectedFreq = Math.min(selectedFreq, s.fc);
+  document.getElementById('phasor-freq-val').textContent = selectedFreq.toFixed(2);
+  ruleSelected.attr('x1', xS(selectedFreq)).attr('x2', xS(selectedFreq)).attr('y1', 0).attr('y2', hS);
 
   // — Phasor diagram —
-  // Normalise each phasor by its own DC value → all arrows guaranteed length ≤ 1
   const norm  = dftAtFreq(v1, 0).re;         // DC of first submovement only
-  const d1    = dftAtFreq(v1, pFreq);
-  const d2    = dftAtFreq(v2, pFreq);
+  const d1    = dftAtFreq(v1, selectedFreq);
+  const d2    = dftAtFreq(v2, selectedFreq);
   const re1 = d1.re / norm, im1 = d1.im / norm;
   const re2 = d2.re / norm, im2 = d2.im / norm;
   const reT = re1 + re2,    imT = im1 + im2;
@@ -336,7 +357,6 @@ function render() {
 
 document.getElementById('isi-slider').addEventListener('input', render);
 document.getElementById('amp-slider').addEventListener('input', render);
-document.getElementById('phasor-freq-slider').addEventListener('input', render);
 window.addEventListener('resize', render);
 requestAnimationFrame(render);
 </script>

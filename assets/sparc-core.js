@@ -79,35 +79,68 @@ export function minimumJerkSubmovement(t, t0, D, amplitude = 1) {
 // ---------------------------------------------------------------------------
 
 /**
- * Compute the single-sided DFT magnitude spectrum of a real-valued signal.
+ * In-place Cooley-Tukey radix-2 FFT (O(N log N)).
+ * N must be a power of 2. Operates on separate real/imaginary arrays.
+ */
+function fftInPlace(re, im) {
+  const N = re.length;
+  // Bit-reversal permutation
+  for (let i = 1, j = 0; i < N; i++) {
+    let bit = N >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  // Butterfly stages
+  for (let len = 2; len <= N; len <<= 1) {
+    const ang = -2 * Math.PI / len;
+    const wRe = Math.cos(ang), wIm = Math.sin(ang);
+    for (let i = 0; i < N; i += len) {
+      let cRe = 1, cIm = 0;
+      const half = len >> 1;
+      for (let j = 0; j < half; j++) {
+        const uRe = re[i + j],        uIm = im[i + j];
+        const vRe = re[i + j + half] * cRe - im[i + j + half] * cIm;
+        const vIm = re[i + j + half] * cIm + im[i + j + half] * cRe;
+        re[i + j]        = uRe + vRe;  im[i + j]        = uIm + vIm;
+        re[i + j + half] = uRe - vRe;  im[i + j + half] = uIm - vIm;
+        const nRe = cRe * wRe - cIm * wIm;
+        cIm = cRe * wIm + cIm * wRe;  cRe = nRe;
+      }
+    }
+  }
+}
+
+/**
+ * Compute the single-sided magnitude spectrum of a real-valued signal.
+ * Uses a radix-2 FFT — O(N log N).
  *
- * This is a direct (O(N²)) DFT — sufficient for the signal lengths used in
- * these simulations (N ≤ 1024). Replace with an FFT library if N grows large.
- *
- * @param {number[]} signal    Uniformly-sampled signal
+ * @param {number[]} signal    Uniformly-sampled signal (length must be a power of 2)
  * @param {number}   dt        Sample interval (s)
  * @returns {{ freqs: number[], mag: number[], N: number, fs: number }}
  *   freqs  — frequency axis (Hz), length floor(N/2)+1
- *   mag    — magnitude (same physical units as signal × s), length floor(N/2)+1
- *   N      — number of samples used
+ *   mag    — magnitude (signal units × s), length floor(N/2)+1
+ *   N      — number of samples
  *   fs     — sample rate (Hz)
  */
 export function computeFFT(signal, dt) {
-  const N = signal.length;
+  const N  = signal.length;
   const fs = 1 / dt;
+  const re = new Array(N).fill(0);
+  const im = new Array(N).fill(0);
+  for (let i = 0; i < N; i++) re[i] = signal[i];
+
+  fftInPlace(re, im);
+
   const Nhalf = Math.floor(N / 2) + 1;
   const freqs = new Array(Nhalf);
   const mag   = new Array(Nhalf);
-
   for (let k = 0; k < Nhalf; k++) {
     freqs[k] = k * fs / N;
-    let re = 0, im = 0;
-    const angle = -2 * Math.PI * k / N;
-    for (let n = 0; n < N; n++) {
-      re += signal[n] * Math.cos(angle * n);
-      im += signal[n] * Math.sin(angle * n);
-    }
-    mag[k] = Math.sqrt(re * re + im * im) * dt;
+    mag[k]   = Math.sqrt(re[k] * re[k] + im[k] * im[k]) * dt;
   }
   return { freqs, mag, N, fs };
 }

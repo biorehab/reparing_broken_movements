@@ -193,7 +193,7 @@ import { computeSPARC, initChartGroup, mkAxis, styleAxis, getInnerWidth } from '
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const DT = 0.01, FS = 1 / DT;
-const SPARC_OPTS = { padFactor: 4, fcMax: 20, ampThreshold: 0.05, magThreshold: 0.05 };
+const SPARC_OPTS = { padFactor: 1, fcMax: 20, ampThreshold: 0.05, magThreshold: 0.05 };
 
 // ─── Box-Muller normal sample ─────────────────────────────────────────────────
 function randn() {
@@ -244,6 +244,8 @@ let noiseBase = null;
 let filterActive = false;
 let xFixedMax = 0;
 let yFixedMax = 0;
+let cachedBeta      = null;
+let cachedSparcTrue = null;
 
 // ─── Movement generation ─────────────────────────────────────────────────────
 function generateMovement() {
@@ -264,6 +266,7 @@ function generateMovement() {
 
   xFixedMax = (N_max - 1) * DT;
   yFixedMax = Math.max(...buildScaled(0.5)) * 1.15;
+  cachedBeta = null;
 
   render();
 }
@@ -322,9 +325,13 @@ function render() {
     v_proc = v_noisy;
   }
 
-  // SPARC — each signal finds its own onset/offset (reflects real-world usage)
-  const sparc_true = computeSPARC(v_true,  DT, SPARC_OPTS).sparc;
-  const sparc_meas = computeSPARC(v_proc,  DT, SPARC_OPTS).sparc;
+  // SPARC — cache true value per beta (only recompute when duration changes)
+  if (beta !== cachedBeta) {
+    cachedSparcTrue = computeSPARC(v_true, DT, SPARC_OPTS).sparc;
+    cachedBeta = beta;
+  }
+  const sparc_true = cachedSparcTrue;
+  const sparc_meas = computeSPARC(v_proc, DT, SPARC_OPTS).sparc;
   const pct        = 100 * (sparc_meas - sparc_true) / Math.abs(sparc_true);
 
   document.getElementById('sparc-true').textContent = sparc_true.toFixed(4);

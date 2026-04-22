@@ -196,85 +196,22 @@
 </div>
 <script type="module">
 import { initChartGroup, mkAxis, styleAxis, getInnerWidth } from '../../assets/sparc-core.js?v=3';
+import {
+  mjtVelocity, computeJerkIntegrals, computeLDLJ,
+  randn, butter2Coeffs, applyIIR, filtfilt,
+} from '../../assets/ldlj-core.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const DT = 0.005, FS = 1 / DT;
-
-// ─── Box-Muller normal sample ─────────────────────────────────────────────
-function randn() {
-  let u;
-  do { u = Math.random(); } while (u === 0);
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random());
-}
-
-// ─── Butterworth 2nd-order zero-lag filter ───────────────────────────────────
-function butter2Coeffs(fc) {
-  const wc = Math.tan(Math.PI * fc / FS);
-  const wc2 = wc * wc;
-  const k   = 1 + Math.SQRT2 * wc + wc2;
-  return {
-    b: [wc2 / k, 2 * wc2 / k, wc2 / k],
-    a: [1, 2 * (wc2 - 1) / k, (1 - Math.SQRT2 * wc + wc2) / k]
-  };
-}
-
-function applyIIR(b, a, x) {
-  const y = new Array(x.length).fill(0);
-  for (let n = 0; n < x.length; n++) {
-    y[n] = b[0] * x[n];
-    if (n >= 1) y[n] += b[1] * x[n - 1] - a[1] * y[n - 1];
-    if (n >= 2) y[n] += b[2] * x[n - 2] - a[2] * y[n - 2];
-  }
-  return y;
-}
-
-function filtfilt(b, a, x) {
-  // Odd-reflection padding at both ends (mirrors scipy filtfilt default)
-  const pad = Math.min(Math.floor(x.length / 4), 30);
-  const px  = [];
-  for (let i = pad; i >= 1; i--) px.push(2 * x[0] - x[Math.min(i, x.length - 1)]);
-  for (const v of x) px.push(v);
-  for (let i = x.length - 2; i >= x.length - 1 - pad; i--) px.push(2 * x[x.length - 1] - x[Math.max(0, i)]);
-
-  let y = applyIIR(b, a, px);
-  y = [...y].reverse();
-  y = applyIIR(b, a, y);
-  y = [...y].reverse();
-  return y.slice(pad, pad + x.length);
-}
-
-// ─── LDLJ (onset/offset supplied from true signal) ───────────────────────────
-function ldljOf(v, onset, offset) {
-  const N = v.length;
-  const T = (offset - onset) * DT;
-  let D = 0;
-  for (let i = onset; i <= offset; i++) D += v[i] * DT;
-  let ISJ = 0;
-  for (let i = Math.max(1, onset); i <= Math.min(N - 2, offset); i++) {
-    const j = (v[i + 1] - 2 * v[i] + v[i - 1]) / (DT * DT);
-    ISJ += j * j * DT;
-  }
-  const dlj = (Math.pow(T, 5) / (D * D)) * ISJ;
-  return -Math.log(dlj);
-}
-
-function trueOnsetOffset(v) {
-  const peak = Math.max(...v);
-  const th   = 0.05 * peak;
-  let on = 0, off = v.length - 1;
-  for (let i = 0; i < v.length; i++)         if (v[i] >= th) { on  = i; break; }
-  for (let i = v.length - 1; i >= 0; i--)    if (v[i] >= th) { off = i; break; }
-  return { on, off };
-}
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let subs      = [];   // [{t0, T, A}]
 let T_base    = 0;
 let N_base    = 0;
-let noiseBase = null; // N_max unit-normal samples
+let noiseBase = null;
 let filterActive = false;
-let xFixedMax = 0;   // x-axis upper bound = 200% duration (fixed per movement)
-let yFixedMax = 0;   // y-axis upper bound = peak speed at 50% duration × 1.15
+let xFixedMax = 0;
+let yFixedMax = 0;
 
 // ─── Movement generation ─────────────────────────────────────────────────────
 function generateMovement() {
@@ -282,38 +219,41 @@ function generateMovement() {
   subs = [];
   let cursor = 0.1;
   for (let k = 0; k < nSub; k++) {
-    const T = 0.5 + Math.random() * 0.5;   // submovement duration [0.5, 1.0] s
-    const A = 0.3 + Math.random() * 0.7;   // displacement [0.3, 1.0]
+    const T = 0.5 + Math.random() * 0.5;
+    const A = 0.3 + Math.random() * 0.7;
     subs.push({ t0: cursor, T, A });
-    cursor += T + Math.random() * 0.3;     // ISI [0, 0.3] s before next onset
+    cursor += T + Math.random() * 0.3;
   }
   T_base = cursor + 0.1;
   N_base = Math.round(T_base / DT);
 
-  // Pre-generate unit-normal noise for the maximum (200%) duration
   const N_max = Math.round(2.0 * N_base);
   noiseBase = Array.from({ length: N_max }, randn);
 
-  // Fixed axis extents (computed once per movement)
-  xFixedMax = (N_max - 1) * DT;                        // time at 200% duration
-  yFixedMax = Math.max(...buildScaled(0.5)) * 1.15;    // peak speed at 50% + 15%
+  xFixedMax = (N_max - 1) * DT;
+  yFixedMax = Math.max(...buildScaled(0.5)) * 1.15;
 
   render();
 }
 
-// ─── Build scaled velocity ────────────────────────────────────────────────────
+// ─── Build scaled velocity using mjtVelocity from ldlj-core ──────────────────
 function buildScaled(beta) {
   const N = Math.round(beta * N_base);
+  const t = Array.from({ length: N }, (_, i) => i * DT);
   const v = new Array(N).fill(0);
-  for (let i = 0; i < N; i++) {
-    const t = i * DT;
-    for (const s of subs) {
-      const tau = (t - beta * s.t0) / (beta * s.T);
-      if (tau >= 0 && tau <= 1)
-        v[i] += (s.A / (beta * s.T)) * (30 * tau ** 2 - 60 * tau ** 3 + 30 * tau ** 4);
-    }
+  for (const s of subs) {
+    const sub = mjtVelocity(t, beta * s.t0, beta * s.T, s.A);
+    for (let i = 0; i < N; i++) v[i] += sub[i];
   }
   return v;
+}
+
+// ─── Exact movement bounds from simulation parameters ────────────────────────
+function exactBounds(beta) {
+  const last     = subs[subs.length - 1];
+  const t_onset  = beta * subs[0].t0;
+  const t_offset = beta * (last.t0 + last.T);
+  return { t_onset, t_offset, T: t_offset - t_onset };
 }
 
 // ─── D3 chart setup ───────────────────────────────────────────────────────────
@@ -350,18 +290,20 @@ function render() {
 
   let v_proc;
   if (filterActive) {
-    const { b, a } = butter2Coeffs(fc);
+    const { b, a } = butter2Coeffs(fc, FS);
     v_proc = filtfilt(b, a, v_noisy);
   } else {
     v_proc = v_noisy;
   }
 
-  // Onset/offset from true signal
-  const { on, off } = trueOnsetOffset(v_true);
+  // Exact bounds from simulation parameters
+  const { t_onset, t_offset, T } = exactBounds(beta);
 
   // LDLJ
-  const ldlj_true = ldljOf(v_true,  on, off);
-  const ldlj_meas = ldljOf(v_proc,  on, off);
+  const { ISJ: isj_true, vPeak: vp_true } = computeJerkIntegrals(v_true, DT, t_onset, t_offset);
+  const ldlj_true = computeLDLJ(isj_true, T, vp_true);
+  const { ISJ: isj_meas, vPeak: vp_meas } = computeJerkIntegrals(v_proc, DT, t_onset, t_offset);
+  const ldlj_meas = computeLDLJ(isj_meas, T, vp_meas);
   const pct       = 100 * (ldlj_meas - ldlj_true) / Math.abs(ldlj_true);
 
   document.getElementById('ldlj-true').textContent = ldlj_true.toFixed(4);

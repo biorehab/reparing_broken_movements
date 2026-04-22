@@ -188,7 +188,7 @@
     </p>
     <p>
       <strong>DLJ, LDLJ, and SDLJ</strong> are all derived from the dimensionless jerk
-      $T^5 D^{-2}\!\int j^2\,dt$, which is invariant under both amplitude and temporal scaling. For amplitude scaling, jerk and displacement both scale by $\alpha$, so $j^2$ and $D^2$ cancel. For temporal scaling, jerk scales as $1/\beta^3$ and the integration interval as $\beta$, giving $\int j^2\,dt \propto 1/\beta^5$; this is exactly cancelled by the $T^5 \propto \beta^5$ factor in the numerator. As a result, DLJ — and any monotone function of it such as LDLJ or SDLJ — remains unchanged regardless of how fast or how far the movement is performed.
+      $T^3 v_p^{-2}\!\int j^2\,dt$, which is invariant under both amplitude and temporal scaling. For amplitude scaling, jerk scales as $\alpha$ and peak speed $v_p$ also scales as $\alpha$, so $j^2$ and $v_p^2$ cancel. For temporal scaling, jerk scales as $1/\beta^3$ and the integration interval as $\beta$, giving $\int j^2\,dt \propto 1/\beta^5$; combined with $T^3 \propto \beta^3$ in the numerator and $v_p^2 \propto 1/\beta^2$ in the denominator, the net scaling is $\beta^3 \cdot \beta^2 \cdot \beta^{-5} = 1$. As a result, DLJ — and any monotone function of it such as LDLJ or SDLJ — remains unchanged regardless of how fast or how far the movement is performed.
     </p>
   </div>
 
@@ -200,17 +200,7 @@
 </div>
 <script type="module">
 import { linspace, initChartGroup, mkAxis, styleAxis, getInnerWidth } from '../../assets/sparc-core.js?v=3';
-
-// ---------------------------------------------------------------------------
-// MJT submovement — velocity profile
-// ---------------------------------------------------------------------------
-function mjtVelocity(t, t_start, T_sub, D_sub) {
-  return t.map(ti => {
-    const tau = (ti - t_start) / T_sub;
-    if (tau < 0 || tau > 1) return 0;
-    return (D_sub / T_sub) * (30*tau**2 - 60*tau**3 + 30*tau**4);
-  });
-}
+import { mjtVelocity, computeAllMeasures } from '../../assets/ldlj-core.js';
 
 // ---------------------------------------------------------------------------
 // Signal generation — sum of 3–5 random MJT submovements
@@ -220,57 +210,27 @@ const N_BASE = Math.round(T_BASE / dt);
 const t_base = linspace(0, T_BASE - dt, N_BASE);
 
 let velocityOrig = null;
+let movOnset = 0, movOffset = 0, movT = 0;  // exact times (s) from simulation
 
 function generateMovement() {
   const nSub = 3 + Math.floor(Math.random() * 3); // 3–5
   const velocity = new Array(N_BASE).fill(0);
   let t_cur = 0.15 + Math.random() * 0.1;
+  const t_onset = t_cur;
+  let t_offset = t_cur;
   for (let k = 0; k < nSub; k++) {
     const T_sub = 0.25 + Math.random() * 0.40;
     const D_sub = k === 0 ? 1.0 : 0.3 + Math.random() * 0.7;
     const sub = mjtVelocity(t_base, t_cur, T_sub, D_sub);
     for (let i = 0; i < N_BASE; i++) velocity[i] += sub[i];
+    t_offset = t_cur + T_sub;
     t_cur += T_sub * (0.3 + Math.random() * 0.5);
     if (t_cur > T_BASE - 0.3) break;
   }
+  movOnset  = t_onset;   // s
+  movOffset = t_offset;  // s
+  movT      = t_offset - t_onset;
   return velocity;
-}
-
-// ---------------------------------------------------------------------------
-// Compute all four measures
-// ---------------------------------------------------------------------------
-function computeMeasures(velocity, dtSig) {
-  const N = velocity.length;
-
-  // Movement boundaries (5% of peak speed threshold)
-  const vPeak = Math.max(...velocity);
-  const thresh = 0.05 * vPeak;
-  let onset = 0, offset = N - 1;
-  for (let i = 0; i < N; i++) { if (velocity[i] >= thresh) { onset = i; break; } }
-  for (let i = N - 1; i >= 0; i--) { if (velocity[i] >= thresh) { offset = i; break; } }
-
-  const T = (offset - onset) * dtSig;
-
-  // Displacement D = ∫v dt
-  let D = 0;
-  for (let i = onset; i <= offset; i++) D += velocity[i] * dtSig;
-
-  // Jerk = d²v/dt² via central differences
-  let ISJ = 0; // integrated squared jerk
-  let IAJ = 0; // integrated absolute jerk
-  for (let i = Math.max(1, onset); i <= Math.min(N - 2, offset); i++) {
-    const j = (velocity[i + 1] - 2 * velocity[i] + velocity[i - 1]) / (dtSig * dtSig);
-    ISJ += j * j * dtSig;
-    IAJ += Math.abs(j) * dtSig;
-  }
-
-  const mj   = -(IAJ / T) / vPeak;         // mean |jerk| / peak speed
-  const _dlj = (T ** 5 / D ** 2) * ISJ;    // 
-  const dlj  = -_dlj;                      // dimensionless jerk
-  const ldlj = -Math.log(_dlj);            // log dimensionless jerk
-  const sdlj = -Math.sqrt(_dlj);           // square root dimensionless jerk
-
-  return { mj, dlj, ldlj, sdlj };
 }
 
 // ---------------------------------------------------------------------------
@@ -300,8 +260,10 @@ function render() {
   const velocityScaled = velocityOrig.map(v => v * alpha / beta);
   const tScaled        = t_base.map(ti => ti * beta);
 
-  const mOrig   = computeMeasures(velocityOrig,   dt);
-  const mScaled = computeMeasures(velocityScaled,  dtScaled);
+  // Scaled signal has dtScaled = dt*beta; all times scale by beta so
+  // onset/offset/T in the scaled time axis are each multiplied by beta.
+  const mOrig   = computeAllMeasures(velocityOrig,   dt,       movOnset,        movOffset,        movT);
+  const mScaled = computeAllMeasures(velocityScaled, dtScaled, movOnset * beta, movOffset * beta, movT * beta);
 
   // Update readout
   document.getElementById('mj-baseline').textContent   = fmt(mOrig.mj,   4);

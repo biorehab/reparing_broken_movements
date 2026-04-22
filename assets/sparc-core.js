@@ -202,7 +202,7 @@ export function computeSPARC(velocity, dt, {
   const duration = (offset - onset) * dt;
 
   // 2. Normalise
-  const vNorm = velocity.map(vi => vi / (vPeak * duration));
+  const vNorm = velocity.map(vi => vi / vPeak);
 
   // 3. Spectrum (with optional zero-padding)
   const Npad = padFactor > 0 ?  nextPow2(N) * (2 ** padFactor) : N;

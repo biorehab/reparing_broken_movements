@@ -199,6 +199,20 @@ export function computeSDLJ(ISJ, T, vPeak) {
   return -Math.sqrt((T ** 3 / vPeak ** 2) * ISJ);
 }
 
+/**
+ * Modified log dimensionless jerk — uses the L1 norm of jerk (∫|j| dt)
+ * with the dimensionally consistent normalisation T / v_peak.
+ *   mod-LDLJ = −log((T / v_peak) · IAJ)
+ * Invariant under amplitude and temporal scaling (same as LDLJ).
+ * @param {number} IAJ    ∫|j| dt
+ * @param {number} T      Movement duration (s)
+ * @param {number} vPeak  Peak speed (a.u.)
+ * @returns {number}
+ */
+export function computeModLDLJ(IAJ, T, vPeak) {
+  return -Math.log((T / vPeak) * IAJ);
+}
+
 // ---------------------------------------------------------------------------
 // Convenience wrapper
 // ---------------------------------------------------------------------------

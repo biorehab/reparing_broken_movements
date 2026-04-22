@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LDLJ: Effect of Threshold-Based Duration Estimation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #ffffff; --border: #e0ddd6;
+    --text: #1a1a1a; --text-muted: #6b6560;
+    --accent: #1a5fa8;
+    --font-serif: "Georgia","Times New Roman",serif;
+    --font-mono: "Menlo","Consolas",monospace;
+    --col-true: #2a7a3a;
+    --col-est:  #c67a2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-serif); font-size: 16px; line-height: 1.7; }
+  .page-wrapper { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color .15s, border-color .15s; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 36px; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: #eef3fb; padding: 3px 10px; border-radius: 2px; margin-bottom: 14px; }
+  h1 { font-size: 28px; font-weight: normal; line-height: 1.3; letter-spacing: -.01em; margin-bottom: 10px; }
+  .subtitle { font-size: 15px; color: var(--text-muted); font-style: italic; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .description { margin-bottom: 28px; }
+  .description p { margin-bottom: 12px; font-size: 15px; color: #2a2a2a; }
+  .description p:last-child { margin-bottom: 0; }
+
+  /* ── Measures panel ──────────────────────────────────────────────────────── */
+  .measures-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 24px; }
+  .measures-header { display: grid; grid-template-columns: 1fr 110px 110px 100px; background: #f5f4f0; border-bottom: 1px solid var(--border); padding: 8px 20px; gap: 8px; }
+  .measures-header span { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+  .measures-header span:not(:first-child) { text-align: right; }
+  .measure-row { display: grid; grid-template-columns: 1fr 110px 110px 100px; padding: 11px 20px; align-items: center; border-bottom: 1px solid #f0ede8; gap: 8px; }
+  .measure-row:last-child { border-bottom: none; }
+  .measure-name { font-family: var(--font-mono); font-size: 14px; color: #333; }
+  .measure-val { font-family: var(--font-mono); font-size: 14px; text-align: right; }
+  .true-val  { color: var(--col-true); font-weight: bold; }
+  .est-val   { color: var(--col-est);  font-weight: bold; }
+  .pct-val   { font-weight: bold; }
+
+  /* ── Chart panel ─────────────────────────────────────────────────────────── */
+  .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px 16px; margin-bottom: 20px; }
+  .chart-title    { font-size: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 13px; color: #555; margin-bottom: 14px; font-style: italic; }
+  svg { display: block; width: 100%; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch-line { width: 20px; height: 0; border-top: 2.5px solid; display: inline-block; vertical-align: middle; }
+  .legend-swatch-dashed { width: 20px; height: 0; border-top: 2.5px dashed; display: inline-block; vertical-align: middle; }
+  .legend-swatch-rect { width: 14px; height: 14px; display: inline-block; vertical-align: middle; border-radius: 2px; opacity: 0.25; }
+
+  /* ── Controls ────────────────────────────────────────────────────────────── */
+  .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px 28px; margin-bottom: 28px; }
+  .controls h2 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 16px; }
+  .slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .slider-label { font-size: 14px; min-width: 240px; color: #333; }
+  .slider-label em { font-style: normal; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
+  input[type=range] { -webkit-appearance: none; flex: 1; height: 4px; background: #ddd; border-radius: 2px; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .slider-value { font-family: var(--font-mono); font-size: 14px; min-width: 72px; text-align: right; color: var(--accent); font-weight: bold; }
+  .gen-row { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 4px; }
+  .gen-btn { font-family: var(--font-mono); font-size: 11px; padding: 7px 22px; border: 1.5px solid var(--accent); border-radius: 3px; background: var(--surface); color: var(--accent); cursor: pointer; letter-spacing: .06em; text-transform: uppercase; transition: all .15s; }
+  .gen-btn:hover { background: var(--accent); color: #fff; }
+
+  /* ── Explainer ───────────────────────────────────────────────────────────── */
+  .output-explainer { margin-top: 32px; }
+  .output-explainer h2 { font-size: 18px; font-weight: bold; margin-bottom: 14px; }
+  .output-explainer p { font-size: 15px; color: #2a2a2a; margin-bottom: 12px; }
+  .output-explainer p:last-child { margin-bottom: 0; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: var(--text-muted); text-decoration: underline; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <a class="back-link" href="../../index.html">← Back to simulations</a>
+
+  <header>
+    <div class="tag">Interactive Simulation</div>
+    <h1>LDLJ: Effect of Threshold-Based Duration Estimation</h1>
+    <p class="subtitle">Companion simulation for the blog post on the LDLJ measure of movement smoothness</p>
+  </header>
+
+  <hr class="divider">
+
+  <div class="description">
+    <p>
+      In practice the true movement duration $T$ is rarely known exactly — it must be estimated from the
+      recorded speed signal by detecting when the speed first exceeds, and last exceeds, some fraction of
+      the peak speed. This page shows how sensitive LDLJ is to that choice.
+    </p>
+    <p>
+      A random movement composed of up to 8 <strong>minimum-jerk (MJT)</strong> submovements is generated
+      on demand. The <strong>true</strong> onset and offset come directly from the simulation parameters.
+      The <strong>estimated</strong> onset and offset are found by scanning the speed signal for the first
+      and last sample that exceeds the chosen amplitude threshold. The duration slider rescales the entire
+      movement in time (25%–200% of its original duration).
+    </p>
+    <p>
+      For LDLJ, because $T$ enters as $T^3$ in the normalisation, even a modest error in duration
+      produces a substantial shift. SPARC, by contrast, cancels duration internally through a
+      double normalisation — it is sensitive instead to which signal window enters the spectrum.
+      This page lets you compare both effects side by side.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── Measures panel ──────────────────────────────────────────────────────── -->
+  <div class="measures-panel">
+    <div class="measures-header">
+      <span>Quantity</span>
+      <span style="color:var(--col-true)">True</span>
+      <span style="color:var(--col-est)">Estimated</span>
+      <span>% Error</span>
+    </div>
+    <div class="measure-row">
+      <span class="measure-name">Duration &nbsp;<em style="font-size:12px;font-family:var(--font-mono);color:#888">(s)</em></span>
+      <span class="measure-val true-val" id="true-T">—</span>
+      <span class="measure-val est-val"  id="est-T">—</span>
+      <span class="measure-val pct-val"  id="pct-T">—</span>
+    </div>
+    <div class="measure-row">
+      <span class="measure-name">Peak speed &nbsp;<em style="font-size:12px;font-family:var(--font-mono);color:#888">(a.u.)</em></span>
+      <span class="measure-val true-val" id="true-vp">—</span>
+      <span class="measure-val est-val"  id="est-vp">—</span>
+      <span class="measure-val pct-val"  id="pct-vp">—</span>
+    </div>
+    <div class="measure-row">
+      <span class="measure-name">LDLJ</span>
+      <span class="measure-val true-val" id="true-ldlj">—</span>
+      <span class="measure-val est-val"  id="est-ldlj">—</span>
+      <span class="measure-val pct-val"  id="pct-ldlj">—</span>
+    </div>
+    <div class="measure-row">
+      <span class="measure-name">SPARC</span>
+      <span class="measure-val true-val" id="true-sparc">—</span>
+      <span class="measure-val est-val"  id="est-sparc">—</span>
+      <span class="measure-val pct-val"  id="pct-sparc">—</span>
+    </div>
+  </div>
+
+  <!-- ── Speed profile chart ─────────────────────────────────────────────────── -->
+  <div class="chart-panel">
+    <div class="chart-title">Speed Profile</div>
+    <div class="chart-subtitle">
+      Shaded regions show the true (green) and estimated (amber) movement windows
+    </div>
+    <svg id="chart-vel" height="280"></svg>
+    <div class="legend">
+      <div class="legend-item">
+        <span class="legend-swatch-rect" style="background:var(--col-true)"></span> True window
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch-rect" style="background:var(--col-est)"></span> Estimated window
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch-dashed" style="border-color:#888"></span> Threshold level
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Controls ──────────────────────────────────────────────────────────── -->
+  <div class="controls">
+    <h2>Controls</h2>
+
+    <div class="slider-row">
+      <span class="slider-label">Movement duration &nbsp;<em>(% of original)</em></span>
+      <input type="range" id="dur-slider" min="25" max="200" step="1" value="100">
+      <span class="slider-value" id="dur-val">100%</span>
+    </div>
+
+    <div class="slider-row">
+      <span class="slider-label">Amplitude threshold &nbsp;<em>(% of peak speed)</em></span>
+      <input type="range" id="thresh-slider" min="1" max="30" step="0.5" value="5">
+      <span class="slider-value" id="thresh-val">5.0%</span>
+    </div>
+
+    <div class="gen-row">
+      <button class="gen-btn" id="gen-btn">Generate new movement</button>
+    </div>
+  </div>
+
+  <!-- ── Explainer ─────────────────────────────────────────────────────────── -->
+  <div class="output-explainer">
+    <h2>What to observe</h2>
+    <p>
+      A high threshold causes the estimated onset to be detected <em>later</em> and the estimated offset
+      <em>earlier</em> than the true values, shrinking the estimated duration. Because LDLJ scales with
+      $T^3$, even a 10% underestimate in $T$ shrinks the normalisation factor by ~27%, shifting the
+      LDLJ value significantly.
+    </p>
+    <p>
+      SPARC behaves very differently. Unlike LDLJ, SPARC does not use duration as an explicit
+      normalisation factor — its internal velocity normalisation by $v_p \cdot T$ is cancelled by a
+      second normalisation by the DC component of the spectrum, so duration drops out entirely.
+      SPARC is therefore <em>insensitive to duration estimation errors per se</em>. What it
+      <em>is</em> sensitive to is which samples go into the Fourier transform: here we compute SPARC
+      from the sliced window, so a different threshold means different signal content enters the
+      spectrum. A narrower window excludes the slow onset/offset edges of the movement, altering the
+      spectral shape and arc length.
+    </p>
+    <p>
+      Compare the % errors for LDLJ and SPARC — they reflect fundamentally different mechanisms:
+      LDLJ error is driven by the $T^3$ factor (pure duration bias), while SPARC error comes from
+      changes in spectral content at the movement boundaries.
+    </p>
+    <p>
+      A very low threshold (near 1%) brings the estimated window close to the true one. But in noisy
+      recordings a low threshold becomes unreliable — spurious noise spikes will cause the onset to be
+      detected much too early and the offset too late, including irrelevant signal at both ends.
+    </p>
+  </div>
+
+  <footer>
+    <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
+    <a href="https://siva82kb.substack.com" target="_blank">Full article on Substack &rarr;</a>
+  </footer>
+
+</div>
+<script type="module">
+import { initChartGroup, mkAxis, styleAxis, getInnerWidth, computeSPARC } from '../../assets/sparc-core.js?v=3';
+import {
+  mjtVelocity, findOnsetOffset, computeJerkIntegrals, computeLDLJ,
+} from '../../assets/ldlj-core.js';
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+const DT = 0.005;
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let subs      = [];
+let T_base    = 0;
+let N_base    = 0;
+let xFixedMax = 0;
+let yFixedMax = 0;
+
+// ─── Movement generation ─────────────────────────────────────────────────────
+function generateMovement() {
+  const nSub = Math.floor(Math.random() * 8) + 1;
+  subs = [];
+  let cursor = 0.1;
+  for (let k = 0; k < nSub; k++) {
+    const T = 0.5 + Math.random() * 0.5;
+    const A = 0.3 + Math.random() * 0.7;
+    subs.push({ t0: cursor, T, A });
+    cursor += T + Math.random() * 0.3;
+  }
+  T_base = cursor + 0.1;
+  N_base = Math.round(T_base / DT);
+
+  // Fixed axes based on the fastest (25%) and longest (200%) renderings
+  xFixedMax = (Math.round(2.0 * N_base) - 1) * DT;
+  yFixedMax = Math.max(...buildScaled(0.25)) * 1.15;
+
+  render();
+}
+
+// ─── Build velocity signal at a given duration scaling ────────────────────────
+function buildScaled(beta) {
+  const N = Math.round(beta * N_base);
+  const t = Array.from({ length: N }, (_, i) => i * DT);
+  const v = new Array(N).fill(0);
+  for (const s of subs) {
+    const sub = mjtVelocity(t, beta * s.t0, beta * s.T, s.A);
+    for (let i = 0; i < N; i++) v[i] += sub[i];
+  }
+  return v;
+}
+
+// ─── Exact movement bounds from simulation parameters ────────────────────────
+function exactBounds(beta) {
+  const first = subs[0];
+  const last  = subs[subs.length - 1];
+  const t_onset  = beta * first.t0;
+  const t_offset = beta * (last.t0 + last.T);
+  return { t_onset, t_offset, T: t_offset - t_onset };
+}
+
+// ─── D3 chart setup ───────────────────────────────────────────────────────────
+const margin = { top: 14, right: 20, bottom: 44, left: 54 };
+const { g: gV, h: hV } = initChartGroup('chart-vel', 280, margin);
+const axV = mkAxis(gV, hV, 'time (s)', 'speed (a.u.)');
+
+const clipId   = 'vel-clip';
+const clipRect = gV.append('clipPath').attr('id', clipId)
+  .append('rect').attr('x', 0).attr('y', 0).attr('height', hV);
+
+// Shaded window rectangles (drawn first so curve sits on top)
+const rectTrue = gV.append('rect').attr('y', 0).attr('height', hV)
+  .attr('fill', '#2a7a3a').attr('opacity', 0.10).attr('clip-path', `url(#${clipId})`);
+const rectEst  = gV.append('rect').attr('y', 0).attr('height', hV)
+  .attr('fill', '#c67a2a').attr('opacity', 0.15).attr('clip-path', `url(#${clipId})`);
+
+// Velocity curve
+const pathVel = gV.append('path').attr('fill', 'none')
+  .attr('stroke', '#555').attr('stroke-width', 2).attr('clip-path', `url(#${clipId})`);
+
+// True onset / offset markers (solid green)
+const lineOnTrue  = gV.append('line').attr('stroke', '#2a7a3a').attr('stroke-width', 1.5)
+  .attr('y1', 0).attr('y2', hV).attr('clip-path', `url(#${clipId})`);
+const lineOffTrue = gV.append('line').attr('stroke', '#2a7a3a').attr('stroke-width', 1.5)
+  .attr('y1', 0).attr('y2', hV).attr('clip-path', `url(#${clipId})`);
+
+// Estimated onset / offset markers (dashed amber)
+const lineOnEst  = gV.append('line').attr('stroke', '#c67a2a').attr('stroke-width', 2)
+  .attr('stroke-dasharray', '6,3').attr('y1', 0).attr('y2', hV)
+  .attr('clip-path', `url(#${clipId})`);
+const lineOffEst = gV.append('line').attr('stroke', '#c67a2a').attr('stroke-width', 2)
+  .attr('stroke-dasharray', '6,3').attr('y1', 0).attr('y2', hV)
+  .attr('clip-path', `url(#${clipId})`);
+
+// Threshold level (horizontal dashed gray)
+const lineThresh = gV.append('line').attr('stroke', '#999').attr('stroke-width', 1)
+  .attr('stroke-dasharray', '4,3').attr('clip-path', `url(#${clipId})`);
+
+// ─── SPARC on a sub-window of the velocity signal ────────────────────────────
+// Slices v to [t_onset, t_offset] then runs computeSPARC on the slice.
+// Uses a tiny internal ampThreshold (0.005) so SPARC's own duration detection
+// spans nearly the full slice rather than interfering with the demo threshold.
+const SPARC_OPTS = { padFactor: 1, ampThreshold: 0.005, fcMax: 20 };
+
+function sparcOf(v, t_onset, t_offset) {
+  const i0    = Math.max(0,             Math.round(t_onset  / DT));
+  const i1    = Math.min(v.length - 1,  Math.round(t_offset / DT));
+  const slice = v.slice(i0, i1 + 1);
+  return computeSPARC(slice, DT, SPARC_OPTS).sparc;
+}
+
+// ─── Helpers for coloring % cells ─────────────────────────────────────────────
+function pctColor(pct) {
+  return Math.abs(pct) < 0.5 ? '#555' : pct > 0 ? '#2a7a3a' : '#b83232';
+}
+function pctText(pct) {
+  return (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  if (!subs.length) return;
+
+  const beta   = +document.getElementById('dur-slider').value / 100;
+  const thresh = +document.getElementById('thresh-slider').value / 100;
+
+  document.getElementById('dur-val').textContent   = (+document.getElementById('dur-slider').value) + '%';
+  document.getElementById('thresh-val').textContent = (+document.getElementById('thresh-slider').value).toFixed(1) + '%';
+
+  const v = buildScaled(beta);
+  const N = v.length;
+
+  // ── True bounds (exact from simulation parameters) ──
+  const { t_onset: t0_true, t_offset: t1_true, T: T_true } = exactBounds(beta);
+  const { ISJ: isj_t, vPeak: vp_t } = computeJerkIntegrals(v, DT, t0_true, t1_true);
+  const ldlj_true = computeLDLJ(isj_t, T_true, vp_t);
+
+  // ── Estimated bounds (amplitude threshold) ──
+  const { onset: t0_est, offset: t1_est, vPeak: vPeakFull } = findOnsetOffset(v, DT, thresh);
+  const T_est = t1_est - t0_est;
+  const { ISJ: isj_e, vPeak: vp_e } = computeJerkIntegrals(v, DT, t0_est, t1_est);
+  const ldlj_est = computeLDLJ(isj_e, T_est, vp_e);
+
+  // ── SPARC ──
+  const sparc_true = sparcOf(v, t0_true, t1_true);
+  const sparc_est  = sparcOf(v, t0_est,  t1_est);
+
+  const pct_T     = 100 * (T_est     - T_true)            / T_true;
+  const pct_vp    = 100 * (vp_e      - vp_t)              / vp_t;
+  const pct_ldlj  = 100 * (ldlj_est  - ldlj_true)         / Math.abs(ldlj_true);
+  const pct_sparc = 100 * (sparc_est - sparc_true)         / Math.abs(sparc_true);
+
+  // ── Update measures panel ──
+  document.getElementById('true-T').textContent   = T_true.toFixed(3) + ' s';
+  document.getElementById('est-T').textContent    = T_est.toFixed(3)  + ' s';
+  const pctTEl = document.getElementById('pct-T');
+  pctTEl.textContent  = pctText(pct_T);
+  pctTEl.style.color  = pctColor(pct_T);
+
+  document.getElementById('true-vp').textContent  = vp_t.toFixed(4);
+  document.getElementById('est-vp').textContent   = vp_e.toFixed(4);
+  const pctVpEl = document.getElementById('pct-vp');
+  pctVpEl.textContent = pctText(pct_vp);
+  pctVpEl.style.color = pctColor(pct_vp);
+
+  document.getElementById('true-ldlj').textContent = ldlj_true.toFixed(4);
+  document.getElementById('est-ldlj').textContent  = ldlj_est.toFixed(4);
+  const pctLdljEl = document.getElementById('pct-ldlj');
+  pctLdljEl.textContent = pctText(pct_ldlj);
+  pctLdljEl.style.color = pctColor(pct_ldlj);
+
+  document.getElementById('true-sparc').textContent = sparc_true.toFixed(4);
+  document.getElementById('est-sparc').textContent  = sparc_est.toFixed(4);
+  const pctSparcEl = document.getElementById('pct-sparc');
+  pctSparcEl.textContent = pctText(pct_sparc);
+  pctSparcEl.style.color = pctColor(pct_sparc);
+
+  // ── Chart ──
+  const wV   = getInnerWidth('chart-vel', margin);
+  clipRect.attr('width', wV);
+
+  const tArr = Array.from({ length: N }, (_, i) => i * DT);
+  const xS   = d3.scaleLinear().domain([0, xFixedMax]).range([0, wV]);
+  const yS   = d3.scaleLinear().domain([-0.02 * yFixedMax, yFixedMax]).range([hV, 0]);
+
+  axV.xAx.call(d3.axisBottom(xS).ticks(8).tickSize(3));  styleAxis(axV.xAx);
+  axV.yAx.call(d3.axisLeft(yS).ticks(5).tickSize(3));    styleAxis(axV.yAx);
+  axV.xLbl.attr('x', wV / 2);
+
+  // Velocity curve
+  const line = d3.line().x((_, i) => xS(tArr[i])).y(d => yS(d));
+  pathVel.attr('d', line(v));
+
+  // Shaded windows
+  rectTrue.attr('x', xS(t0_true)).attr('width', Math.max(0, xS(t1_true) - xS(t0_true)));
+  rectEst.attr('x', xS(t0_est)).attr('width', Math.max(0, xS(t1_est) - xS(t0_est)));
+
+  // Vertical bound markers
+  lineOnTrue.attr('x1', xS(t0_true)).attr('x2', xS(t0_true));
+  lineOffTrue.attr('x1', xS(t1_true)).attr('x2', xS(t1_true));
+  lineOnEst.attr('x1', xS(t0_est)).attr('x2', xS(t0_est));
+  lineOffEst.attr('x1', xS(t1_est)).attr('x2', xS(t1_est));
+
+  // Horizontal threshold line
+  const threshY = yS(thresh * vPeakFull);
+  lineThresh.attr('x1', 0).attr('x2', wV).attr('y1', threshY).attr('y2', threshY);
+}
+
+// ─── Event wiring ─────────────────────────────────────────────────────────────
+document.getElementById('dur-slider').addEventListener('input', render);
+document.getElementById('thresh-slider').addEventListener('input', render);
+document.getElementById('gen-btn').addEventListener('click', generateMovement);
+window.addEventListener('resize', render);
+
+generateMovement();
+</script>
+</body>
+</html>

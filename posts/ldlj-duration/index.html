@@ -45,6 +45,12 @@
   .true-val  { color: var(--col-true); font-weight: bold; }
   .est-val   { color: var(--col-est);  font-weight: bold; }
   .pct-val   { font-weight: bold; }
+  /* Secondary rows — intermediate quantities, not the primary measures */
+  .measure-row.secondary .measure-name { font-size: 12px; color: #888; }
+  .measure-row.secondary .measure-val  { font-size: 12px; font-weight: normal; }
+  .measure-row.secondary .true-val     { color: #6aaa7a; }
+  .measure-row.secondary .est-val      { color: #d89a55; }
+  .measure-row.secondary .pct-val      { font-weight: normal; }
 
   /* ── Chart panel ─────────────────────────────────────────────────────────── */
   .chart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px 24px 16px; margin-bottom: 20px; }
@@ -125,17 +131,23 @@
       <span style="color:var(--col-est)">Estimated</span>
       <span>% Error</span>
     </div>
-    <div class="measure-row">
-      <span class="measure-name">Duration &nbsp;<em style="font-size:12px;font-family:var(--font-mono);color:#888">(s)</em></span>
+    <div class="measure-row secondary">
+      <span class="measure-name">Duration &nbsp;<em>(s)</em></span>
       <span class="measure-val true-val" id="true-T">—</span>
       <span class="measure-val est-val"  id="est-T">—</span>
       <span class="measure-val pct-val"  id="pct-T">—</span>
     </div>
-    <div class="measure-row">
-      <span class="measure-name">Peak speed &nbsp;<em style="font-size:12px;font-family:var(--font-mono);color:#888">(a.u.)</em></span>
+    <div class="measure-row secondary">
+      <span class="measure-name">Peak speed &nbsp;<em>(a.u.)</em></span>
       <span class="measure-val true-val" id="true-vp">—</span>
       <span class="measure-val est-val"  id="est-vp">—</span>
       <span class="measure-val pct-val"  id="pct-vp">—</span>
+    </div>
+    <div class="measure-row secondary">
+      <span class="measure-name">Jerk integral &nbsp;<em>($\int j^2\,dt$)</em></span>
+      <span class="measure-val true-val" id="true-isj">—</span>
+      <span class="measure-val est-val"  id="est-isj">—</span>
+      <span class="measure-val pct-val"  id="pct-isj">—</span>
     </div>
     <div class="measure-row">
       <span class="measure-name">LDLJ</span>
@@ -368,6 +380,7 @@ function render() {
   const T_est = t1_est - t0_est;
   const { ISJ: isj_e, vPeak: vp_e } = computeJerkIntegrals(v, DT, t0_est, t1_est);
   const ldlj_est = computeLDLJ(isj_e, T_est, vp_e);
+  const pct_isj   = 100 * (isj_e   - isj_t)   / isj_t;
 
   // ── SPARC ──
   const sparc_true = sparcOf(v, t0_true, t1_true);
@@ -390,6 +403,12 @@ function render() {
   const pctVpEl = document.getElementById('pct-vp');
   pctVpEl.textContent = pctText(pct_vp);
   pctVpEl.style.color = pctColor(pct_vp);
+
+  document.getElementById('true-isj').textContent  = isj_t.toFixed(4);
+  document.getElementById('est-isj').textContent   = isj_e.toFixed(4);
+  const pctIsjEl = document.getElementById('pct-isj');
+  pctIsjEl.textContent = pctText(pct_isj);
+  pctIsjEl.style.color = pctColor(pct_isj);
 
   document.getElementById('true-ldlj').textContent = ldlj_true.toFixed(4);
   document.getElementById('est-ldlj').textContent  = ldlj_est.toFixed(4);

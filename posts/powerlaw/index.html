@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power Law of Movement</title>
+<style>
+  :root {
+    --bg: #fafaf7; --surface: #ffffff; --border: #e0ddd6;
+    --text: #1a1a1a; --text-muted: #6b6560;
+    --accent: #1a5fa8;
+    --font-serif: "Georgia","Times New Roman",serif;
+    --font-mono: "Menlo","Consolas",monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-serif); font-size: 16px; line-height: 1.7; }
+  .page-wrapper { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: .02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color .15s, border-color .15s; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  header { margin-bottom: 36px; }
+  .tag { display: inline-block; font-size: 11px; font-family: var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: #eef3fb; padding: 3px 10px; border-radius: 2px; margin-bottom: 14px; }
+  h1 { font-size: 28px; font-weight: normal; line-height: 1.3; letter-spacing: -.01em; margin-bottom: 10px; }
+  .subtitle { font-size: 15px; color: var(--text-muted); font-style: italic; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  .controls {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px 20px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .ctrl-btn {
+    font-family: var(--font-mono); font-size: 11px; padding: 5px 16px;
+    border: 1.5px solid var(--border); border-radius: 3px;
+    background: var(--surface); color: var(--text-muted);
+    cursor: pointer; letter-spacing: .06em; text-transform: uppercase;
+    transition: all .15s;
+  }
+  .ctrl-btn:hover  { border-color: var(--accent); color: var(--accent); }
+  .ctrl-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .ctrl-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .ctrl-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; }
+  select.ctrl-select {
+    font-family: var(--font-mono); font-size: 11px; padding: 5px 10px;
+    border: 1.5px solid var(--border); border-radius: 3px;
+    background: var(--surface); color: var(--text-muted); cursor: pointer;
+  }
+  select.ctrl-select:focus { outline: none; border-color: var(--accent); }
+  .slider-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 20px; margin-bottom: 10px;
+  }
+  input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  .display-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .display-panel svg { display: block; width: 100%; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a { color: var(--text-muted); text-decoration: underline; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <a class="back-link" href="../../index.html">← Back to simulations</a>
+
+  <header>
+    <div class="tag">Interactive Simulation</div>
+    <h1>The Power Law of Movement</h1>
+    <p class="subtitle">Real arm movement data showing the speed–curvature power law</p>
+  </header>
+
+  <hr class="divider">
+
+  <div class="controls">
+    <span class="ctrl-label">Dataset</span>
+    <select class="ctrl-select" id="sel-dataset">
+      <option value="small_ellipse.csv">Small ellipse</option>
+      <option value="medium_ellipse.csv" selected>Medium ellipse</option>
+      <option value="big_ellipse.csv">Big ellipse</option>
+      <option value="figure8.csv">Figure 8</option>
+    </select>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn active" id="btn-play">▶ Play</button>
+    <button class="ctrl-btn" id="btn-reset">Reset</button>
+    <div class="ctrl-sep"></div>
+    <span class="ctrl-label">Speed</span>
+    <button class="ctrl-btn speed-btn" data-speed="0.25">¼×</button>
+    <button class="ctrl-btn speed-btn" data-speed="0.5">½×</button>
+    <button class="ctrl-btn speed-btn active" data-speed="1">1×</button>
+    <button class="ctrl-btn speed-btn" data-speed="2">2×</button>
+  </div>
+
+  <div class="slider-wrap">
+    <input type="range" id="time-slider" min="0" max="1000" value="0">
+  </div>
+
+  <div class="display-panel">
+    <svg id="main-svg" viewBox="0 0 900 430" preserveAspectRatio="xMidYMid meet" height="430">
+      <defs>
+        <!-- Trajectory panel clip -->
+        <clipPath id="traj-clip">
+          <rect x="20" y="45" width="210" height="370"/>
+        </clipPath>
+        <!-- Log–log plot area clip (coordinates in g-loglog local space) -->
+        <clipPath id="ll-plot-clip">
+          <rect id="ll-plot-clip-rect" x="0" y="0" width="0" height="0"/>
+        </clipPath>
+        <!-- Velocity arrow marker -->
+        <marker id="vel-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
+        </marker>
+      </defs>
+
+      <!-- ── Panel 1: Trajectory ─────────────────────────────────────────── -->
+      <text x="125" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#666">Trajectory</text>
+      <g id="g-traj" clip-path="url(#traj-clip)">
+        <polyline id="traj-full"    fill="none" stroke="#ddd"    stroke-width="1"   stroke-linejoin="round"/>
+        <polyline id="traj-visited" fill="none" stroke="#7aaedb" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle   id="osc-circle"   fill="none" stroke="#52b788" stroke-width="1"   visibility="hidden"/>
+        <line     id="vel-arrow"    stroke="#111" stroke-width="1.5" marker-end="url(#vel-arrowhead)" visibility="hidden"/>
+        <circle   id="traj-dot"     r="5" fill="#b83232"/>
+      </g>
+
+      <!-- ── Panel 2a: Speed ─────────────────────────────────────────────── -->
+      <text x="400" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#1a5fa8">Speed</text>
+      <g id="g-speed">
+        <polyline id="speed-full"   fill="none" stroke="#e0e0e0" stroke-width="1"   stroke-linejoin="round"/>
+        <polyline id="speed-visited" fill="none" stroke="#1a5fa8" stroke-width="2"   stroke-linejoin="round"/>
+        <line     id="speed-cursor" stroke="#aaa" stroke-width="1" stroke-dasharray="3,3"/>
+      </g>
+
+      <!-- ── Panel 2b: Curvature ─────────────────────────────────────────── -->
+      <text x="400" y="224" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#b83232">Curvature</text>
+      <g id="g-curv">
+        <polyline id="curv-full"   fill="none" stroke="#e0e0e0" stroke-width="1"   stroke-linejoin="round"/>
+        <polyline id="curv-visited" fill="none" stroke="#b83232" stroke-width="2"   stroke-linejoin="round"/>
+        <line     id="curv-cursor" stroke="#aaa" stroke-width="1" stroke-dasharray="3,3"/>
+      </g>
+
+      <!-- ── Panel 3: Log–log ────────────────────────────────────────────── -->
+      <text x="745" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#555">Speed vs Curvature (log–log)</text>
+      <g id="g-loglog">
+        <!-- Axis labels and legend sit outside the data clip -->
+        <text id="ll-xlabel" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="11" fill="#888"/>
+        <text id="ll-ylabel" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="11" fill="#888" transform="rotate(-90)"/>
+        <g id="ll-legend"/>
+        <!-- Everything inside this group is clipped to the plot rectangle -->
+        <g clip-path="url(#ll-plot-clip)">
+          <g id="loglog-scatter"/>
+          <line id="ll-fit-line" stroke="#1a5fa8" stroke-width="1.5"/>
+          <line id="ll-ref-line" stroke="#b83232" stroke-width="1.5" stroke-dasharray="5,4"/>
+          <g id="loglog-trail"/>
+          <circle id="loglog-dot" r="5" fill="#b83232"/>
+        </g>
+        <!-- Border drawn on top so it's always visible -->
+        <rect id="ll-border" fill="none" stroke="#ddd" stroke-width="1"/>
+      </g>
+    </svg>
+  </div>
+
+  <footer>
+    <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
+    <a href="https://siva82kb.substack.com" target="_blank">Full article on Substack &rarr;</a>
+  </footer>
+
+</div>
+<script>
+// ─── Layout constants ─────────────────────────────────────────────────────────
+const TRAJ    = { x1: 20,  y1: 45, x2: 230, y2: 415 };
+const SPEED_G = { tx: 265, ty: 45 };
+const SPEED   = { x1: 0,   y1: 0,  x2: 270, y2: 150 };
+const CURV_G  = { tx: 265, ty: 230 };
+const CURV    = { x1: 0,   y1: 0,  x2: 270, y2: 150 };
+const LL_G    = { tx: 570, ty: 45 };
+const LL      = { x1: 30,  y1: 5,  x2: 295, y2: 355 };
+
+const TRAIL_WIN = 1.0;   // seconds
+const LL_TRAIL  = 40;    // max circles on log–log trail
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let data = [], meta = {}, scales = {};
+let currentIdx = 0, rafId = null, draggingSlider = false;
+let playback = { playing: false, speed: 1.0, startIdx: 0, startWall: 0 };
+
+let trajPts = [], speedPts = [], curvPts = [], loglogPts = [];
+let llTrailCircles = [];
+
+// ─── SVG helpers ──────────────────────────────────────────────────────────────
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const $      = id => document.getElementById(id);
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function setAttrs(el, attrs) {
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+}
+function linearScale(dMin, dMax, rMin, rMax) {
+  const k = (rMax - rMin) / (dMax - dMin);
+  return v => rMin + (v - dMin) * k;
+}
+function pts2str(arr) {
+  return arr.map(p => `${p.sx.toFixed(1)},${p.sy.toFixed(1)}`).join(' ');
+}
+
+// ─── Data loading ─────────────────────────────────────────────────────────────
+async function loadData(filename) {
+  const text  = await (await fetch(`./${filename}`)).text();
+  meta = {};
+  const dataLines = [];
+  for (const line of text.split('\n')) {
+    if (line.startsWith('#')) {
+      const [k, v] = line.slice(1).trim().split('=');
+      meta[k.trim()] = parseFloat(v);
+    } else if (line.trim()) {
+      dataLines.push(line.trim());
+    }
+  }
+  const headers = dataLines[0].split(',');
+  data = dataLines.slice(1).map(line => {
+    const vals = line.split(','), row = {};
+    headers.forEach((h, j) => { row[h] = parseFloat(vals[j]); });
+    return row;
+  });
+}
+
+// ─── Scales ───────────────────────────────────────────────────────────────────
+function setupScales() {
+  // Trajectory — aspect-preserving fit
+  const xMin = Math.min(...data.map(d => d.x)), xMax = Math.max(...data.map(d => d.x));
+  const yMin = Math.min(...data.map(d => d.y)), yMax = Math.max(...data.map(d => d.y));
+  const sc = Math.min((TRAJ.x2-TRAJ.x1)/(xMax-xMin), (TRAJ.y2-TRAJ.y1)/(yMax-yMin)) * 0.92;
+  const cx = (TRAJ.x1+TRAJ.x2)/2, cy = (TRAJ.y1+TRAJ.y2)/2;
+  scales.trajX     = v => cx + (v - (xMin+xMax)/2) * sc;
+  scales.trajY     = v => cy - (v - (yMin+yMax)/2) * sc;
+  scales.trajScale = sc;   // data-units → SVG pixels, for converting radius
+
+  // Time → x for both time panels
+  const tMin = data[0].t, tMax = data[data.length-1].t;
+  scales.speedX = linearScale(tMin, tMax, SPEED.x1, SPEED.x2);
+  scales.curvX  = linearScale(tMin, tMax, CURV.x1,  CURV.x2);
+  scales.speedY = linearScale(Math.min(...data.map(d=>d.speed)),     Math.max(...data.map(d=>d.speed)),     SPEED.y2-5, SPEED.y1+5);
+  scales.curvY  = linearScale(Math.min(...data.map(d=>d.curvature)), Math.max(...data.map(d=>d.curvature)), CURV.y2-5,  CURV.y1+5);
+
+  // Log–log
+  const valid = data.filter(d => !isNaN(d.log_speed));
+  const lkMin = Math.min(...valid.map(d=>d.log_curvature))-0.2, lkMax = Math.max(...valid.map(d=>d.log_curvature))+0.2;
+  const lvMin = Math.min(...valid.map(d=>d.log_speed))-0.2,     lvMax = Math.max(...valid.map(d=>d.log_speed))+0.2;
+  scales.llX = linearScale(lkMin, lkMax, LL.x1, LL.x2);
+  scales.llY = linearScale(lvMin, lvMax, LL.y2, LL.y1);
+  scales.lkMin = lkMin; scales.lkMax = lkMax;
+  scales.maxSpeed = Math.max(...data.map(d => d.speed));
+}
+
+// ─── Build statics ────────────────────────────────────────────────────────────
+function buildStatics() {
+  trajPts   = data.map(d => ({ sx: scales.trajX(d.x),  sy: scales.trajY(d.y) }));
+  speedPts  = data.map(d => ({ sx: scales.speedX(d.t), sy: scales.speedY(d.speed) }));
+  curvPts   = data.map(d => ({ sx: scales.curvX(d.t),  sy: scales.curvY(d.curvature) }));
+  loglogPts = data.map(d => ({
+    sx: isNaN(d.log_curvature) ? null : scales.llX(d.log_curvature),
+    sy: isNaN(d.log_speed)     ? null : scales.llY(d.log_speed),
+    valid: !isNaN(d.log_speed) && !isNaN(d.log_curvature)
+  }));
+
+  // ── Trajectory ──────────────────────────────────────────────────────────
+  $('g-traj').setAttribute('transform', '');
+  $('traj-full').setAttribute('points', pts2str(trajPts));
+  // traj-gray starts empty — grows in render()
+
+
+  // ── Speed / Curvature ────────────────────────────────────────────────────
+  $('g-speed').setAttribute('transform', `translate(${SPEED_G.tx},${SPEED_G.ty})`);
+  $('g-curv').setAttribute('transform',  `translate(${CURV_G.tx},${CURV_G.ty})`);
+
+  // Full ghost waveforms — built once, always visible
+  $('speed-full').setAttribute('points', pts2str(speedPts));
+  $('curv-full').setAttribute('points',  pts2str(curvPts));
+
+  setAttrs($('speed-cursor'), { x1: SPEED.x1, x2: SPEED.x1, y1: SPEED.y1, y2: SPEED.y2 });
+  setAttrs($('curv-cursor'),  { x1: CURV.x1,  x2: CURV.x1,  y1: CURV.y1,  y2: CURV.y2  });
+
+  // ── Log–log ──────────────────────────────────────────────────────────────
+  $('g-loglog').setAttribute('transform', `translate(${LL_G.tx},${LL_G.ty})`);
+
+  // Set clip rect to the plot area (local coords)
+  setAttrs($('ll-plot-clip-rect'), { x: LL.x1, y: LL.y1, width: LL.x2-LL.x1, height: LL.y2-LL.y1 });
+
+  // Border rect
+  setAttrs($('ll-border'), { x: LL.x1, y: LL.y1, width: LL.x2-LL.x1, height: LL.y2-LL.y1 });
+
+  // Axis labels
+  setAttrs($('ll-xlabel'), { x: (LL.x1+LL.x2)/2, y: LL.y2+18 });
+  $('ll-xlabel').textContent = 'log κ';
+  setAttrs($('ll-ylabel'), { x: -(LL.y1+LL.y2)/2, y: LL.x1-18 });
+  $('ll-ylabel').textContent = 'log v';
+
+  // Background scatter (all valid points, gray)
+  const scatter = $('loglog-scatter');
+  scatter.innerHTML = '';
+  loglogPts.forEach(p => {
+    if (p.valid) scatter.appendChild(svgEl('circle', { cx: p.sx, cy: p.sy, r: '2', fill: '#ccc' }));
+  });
+
+  // Regression lines
+  const lkMin = scales.lkMin, lkMax = scales.lkMax;
+  setAttrs($('ll-fit-line'), {
+    x1: scales.llX(lkMin), y1: scales.llY(meta.fit_slope * lkMin + meta.fit_intercept),
+    x2: scales.llX(lkMax), y2: scales.llY(meta.fit_slope * lkMax + meta.fit_intercept)
+  });
+  setAttrs($('ll-ref-line'), {
+    x1: scales.llX(lkMin), y1: scales.llY(meta.ref_slope * lkMin + meta.ref_intercept),
+    x2: scales.llX(lkMax), y2: scales.llY(meta.ref_slope * lkMax + meta.ref_intercept)
+  });
+
+  // Legend
+  const legend = $('ll-legend');
+  legend.innerHTML = '';
+  const ly = LL.y1 + 14;
+  legend.appendChild(svgEl('line', { x1: LL.x1+4, y1: ly,    x2: LL.x1+20, y2: ly,    stroke: '#1a5fa8', 'stroke-width': '1.5' }));
+  legend.appendChild(svgEl('line', { x1: LL.x1+4, y1: ly+14, x2: LL.x1+20, y2: ly+14, stroke: '#b83232', 'stroke-width': '1.5', 'stroke-dasharray': '5,4' }));
+  const t1 = svgEl('text', { x: LL.x1+24, y: ly+4,  'font-family': 'Helvetica,sans-serif', 'font-size': '10', fill: '#555' });
+  t1.textContent = `Fit  (β = ${meta.fit_slope.toFixed(2)})`;
+  const t2 = svgEl('text', { x: LL.x1+24, y: ly+18, 'font-family': 'Helvetica,sans-serif', 'font-size': '10', fill: '#555' });
+  t2.textContent = '2/3 power law  (β = −0.33)';
+  legend.appendChild(t1); legend.appendChild(t2);
+
+  // Pre-create log–log trail circles
+  const llTrl = $('loglog-trail');
+  llTrl.innerHTML = '';
+  llTrailCircles = [];
+  for (let i = 0; i < LL_TRAIL; i++) {
+    const c = svgEl('circle', { r: '3', fill: '#1a5fa8', visibility: 'hidden' });
+    llTrl.appendChild(c);
+    llTrailCircles.push(c);
+  }
+}
+
+// ─── Trail helper ─────────────────────────────────────────────────────────────
+// Collect up to maxN indices ≤ idx with data time ≥ t_cur - TRAIL_WIN, valid optional.
+function collectTrail(idx, validFn, maxN) {
+  const tMin = data[idx].t - TRAIL_WIN;
+  const out  = [];
+  for (let i = idx; i >= 0 && out.length < maxN; i--) {
+    if (data[i].t < tMin) break;
+    if (validFn(i)) out.unshift(i);
+  }
+  return out;
+}
+
+function updateCircles(circles, idxArr, ptsFn, color) {
+  const n = idxArr.length;
+  circles.forEach((c, ci) => {
+    if (ci >= n) { c.setAttribute('visibility', 'hidden'); return; }
+    const pt  = ptsFn(idxArr[ci]);
+    const age = (ci + 1) / n;   // 0 = oldest, 1 = newest
+    setAttrs(c, {
+      visibility: 'visible', cx: pt.sx.toFixed(1), cy: pt.sy.toFixed(1),
+      opacity: (0.1 + 0.9 * age).toFixed(2), fill: color
+    });
+  });
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render(idx) {
+  idx = Math.max(0, Math.min(idx, data.length - 1));
+  currentIdx = idx;
+  const tCur = data[idx].t;
+
+  // 1. Trajectory — ghost (full, thin gray) + growing blue visited line + velocity arrow + red dot
+  $('traj-visited').setAttribute('points', pts2str(trajPts.slice(0, idx + 1)));
+
+  // Velocity arrow: direction from central difference in SVG space, length ∝ speed
+  const p = trajPts[idx];
+  const iPrev = Math.max(0, idx - 1);
+  const iNext = Math.min(data.length - 1, idx + 1);
+  let dvx = trajPts[iNext].sx - trajPts[iPrev].sx;
+  let dvy = trajPts[iNext].sy - trajPts[iPrev].sy;
+  const dlen = Math.hypot(dvx, dvy);
+  if (dlen > 0.1) {
+    const arrowLen = 40 * data[idx].speed / scales.maxSpeed;
+    dvx = dvx / dlen * arrowLen;
+    dvy = dvy / dlen * arrowLen;
+    setAttrs($('vel-arrow'), { x1: p.sx, y1: p.sy, x2: p.sx + dvx, y2: p.sy + dvy, visibility: 'visible' });
+  } else {
+    $('vel-arrow').setAttribute('visibility', 'hidden');
+  }
+
+  // Osculating circle: centre from data, radius = 1/curvature, both scaled to SVG
+  const d = data[idx];
+  const oscR = (1 / (d.curvature + 1e-12)) * scales.trajScale;
+  if (!isNaN(d.osc_cx) && !isNaN(d.osc_cy) && oscR < 600) {
+    setAttrs($('osc-circle'), {
+      cx: scales.trajX(d.osc_cx).toFixed(1),
+      cy: scales.trajY(d.osc_cy).toFixed(1),
+      r:  oscR.toFixed(1),
+      visibility: 'visible'
+    });
+  } else {
+    $('osc-circle').setAttribute('visibility', 'hidden');
+  }
+
+  setAttrs($('traj-dot'), { cx: trajPts[idx].sx, cy: trajPts[idx].sy });
+
+  // 2. Speed — growing blue visited line + cursor
+  const sxCur = speedPts[idx].sx;
+  setAttrs($('speed-cursor'), { x1: sxCur, x2: sxCur, y1: SPEED.y1, y2: SPEED.y2 });
+  $('speed-visited').setAttribute('points', pts2str(speedPts.slice(0, idx + 1)));
+
+  // 3. Curvature — growing red visited line + cursor
+  const cxCur = curvPts[idx].sx;
+  setAttrs($('curv-cursor'), { x1: cxCur, x2: cxCur, y1: CURV.y1, y2: CURV.y2 });
+  $('curv-visited').setAttribute('points', pts2str(curvPts.slice(0, idx + 1)));
+
+  // 4. Log–log — 1-sec trail + red dot
+  const llIdxs = collectTrail(idx, i => loglogPts[i].valid, LL_TRAIL);
+  updateCircles(llTrailCircles, llIdxs, i => loglogPts[i], '#1a5fa8');
+
+  const curLL = loglogPts[idx];
+  if (curLL.valid) {
+    setAttrs($('loglog-dot'), { cx: curLL.sx, cy: curLL.sy, visibility: 'visible' });
+  } else {
+    $('loglog-dot').setAttribute('visibility', 'hidden');
+  }
+
+  // 5. Slider sync
+  if (!draggingSlider)
+    $('time-slider').value = Math.round(idx / (data.length - 1) * 1000);
+}
+
+// ─── Animation ────────────────────────────────────────────────────────────────
+function tick(wallNow) {
+  if (!playback.playing) return;
+  const elapsed = (wallNow - playback.startWall) / 1000 * playback.speed;
+  const targetT = data[playback.startIdx].t + elapsed;
+  let newIdx = playback.startIdx;
+  while (newIdx < data.length - 1 && data[newIdx].t < targetT) newIdx++;
+  render(newIdx);
+  if (newIdx < data.length - 1) {
+    rafId = requestAnimationFrame(tick);
+  } else {
+    playback.playing = false; updatePlayBtn();
+  }
+}
+
+function startPlay() {
+  if (currentIdx >= data.length - 1) currentIdx = 0;
+  playback.playing = true; playback.startIdx = currentIdx;
+  playback.startWall = performance.now();
+  updatePlayBtn();
+  rafId = requestAnimationFrame(tick);
+}
+
+function pausePlay() {
+  playback.playing = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  updatePlayBtn();
+}
+
+function updatePlayBtn() {
+  const btn = $('btn-play');
+  btn.textContent = playback.playing ? '⏸ Pause' : '▶ Play';
+  btn.classList.toggle('active', !playback.playing);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init(filename) {
+  pausePlay(); currentIdx = 0;
+  await loadData(filename);
+  setupScales(); buildStatics(); render(0); updatePlayBtn();
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────────
+$('btn-play').addEventListener('click',  () => { playback.playing ? pausePlay() : startPlay(); });
+$('btn-reset').addEventListener('click', () => { pausePlay(); currentIdx = 0; render(0); });
+$('sel-dataset').addEventListener('change', e => init(e.target.value));
+
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const was = playback.playing; pausePlay();
+    playback.speed = parseFloat(btn.dataset.speed);
+    if (was) startPlay();
+  });
+});
+
+const slider = $('time-slider');
+slider.addEventListener('mousedown',  () => { draggingSlider = true;  pausePlay(); });
+slider.addEventListener('touchstart', () => { draggingSlider = true;  pausePlay(); });
+slider.addEventListener('mouseup',    () => { draggingSlider = false; });
+slider.addEventListener('touchend',   () => { draggingSlider = false; });
+slider.addEventListener('input', () => {
+  render(Math.round(slider.value / 1000 * (data.length - 1)));
+});
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+init('medium_ellipse.csv');
+</script>
+</body>
+</html>

@@ -88,6 +88,14 @@
     <button class="ctrl-btn speed-btn" data-speed="0.5">½×</button>
     <button class="ctrl-btn speed-btn active" data-speed="1">1×</button>
     <button class="ctrl-btn speed-btn" data-speed="2">2×</button>
+    <div class="ctrl-sep"></div>
+    <span class="ctrl-label">Log–log</span>
+    <select class="ctrl-select" id="sel-pair">
+      <option value="v_kappa"      selected>v vs κ</option>
+      <option value="v_radius"            >v vs R</option>
+      <option value="omega_kappa"         >ω vs κ</option>
+      <option value="omega_radius"        >ω vs R</option>
+    </select>
   </div>
 
   <div class="slider-wrap">
@@ -101,12 +109,18 @@
         <clipPath id="traj-clip">
           <rect x="20" y="45" width="210" height="370"/>
         </clipPath>
-        <!-- Log–log plot area clip (coordinates in g-loglog local space) -->
+        <!-- Log–log plot area clip (in g-loglog local space) -->
         <clipPath id="ll-plot-clip">
           <rect id="ll-plot-clip-rect" x="0" y="0" width="0" height="0"/>
         </clipPath>
-        <!-- Velocity arrow marker -->
-        <marker id="vel-arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <!-- Frenet frame arrowheads -->
+        <marker id="frenet-t-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#e07b39"/>
+        </marker>
+        <marker id="frenet-n-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#7c3aed"/>
+        </marker>
+        <marker id="vel-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
           <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
         </marker>
       </defs>
@@ -117,34 +131,34 @@
         <polyline id="traj-full"    fill="none" stroke="#ddd"    stroke-width="1"   stroke-linejoin="round"/>
         <polyline id="traj-visited" fill="none" stroke="#7aaedb" stroke-width="1.5" stroke-linejoin="round"/>
         <circle   id="osc-circle"   fill="none" stroke="#52b788" stroke-width="1"   visibility="hidden"/>
-        <line     id="vel-arrow"    stroke="#111" stroke-width="1.5" marker-end="url(#vel-arrowhead)" visibility="hidden"/>
+        <line     id="frenet-t"     stroke="#e07b39" stroke-width="1.5" marker-end="url(#frenet-t-head)" visibility="hidden"/>
+        <line     id="frenet-n"     stroke="#7c3aed" stroke-width="1.5" marker-end="url(#frenet-n-head)" visibility="hidden"/>
+        <line     id="vel-arrow"    stroke="#111"    stroke-width="1.5" marker-end="url(#vel-head)"     visibility="hidden"/>
         <circle   id="traj-dot"     r="5" fill="#b83232"/>
       </g>
 
       <!-- ── Panel 2a: Speed ─────────────────────────────────────────────── -->
-      <text x="400" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#1a5fa8">Speed</text>
+      <text id="speed-label" x="400" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#1a5fa8">Speed</text>
       <g id="g-speed">
-        <polyline id="speed-full"   fill="none" stroke="#e0e0e0" stroke-width="1"   stroke-linejoin="round"/>
-        <polyline id="speed-visited" fill="none" stroke="#1a5fa8" stroke-width="2"   stroke-linejoin="round"/>
-        <line     id="speed-cursor" stroke="#aaa" stroke-width="1" stroke-dasharray="3,3"/>
+        <polyline id="speed-full"    fill="none" stroke="#e0e0e0" stroke-width="1" stroke-linejoin="round"/>
+        <polyline id="speed-visited" fill="none" stroke="#1a5fa8" stroke-width="2" stroke-linejoin="round"/>
+        <line     id="speed-cursor"  stroke="#aaa" stroke-width="1" stroke-dasharray="3,3"/>
       </g>
 
       <!-- ── Panel 2b: Curvature ─────────────────────────────────────────── -->
-      <text x="400" y="224" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#b83232">Curvature</text>
+      <text id="curv-label" x="400" y="224" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#b83232">Curvature</text>
       <g id="g-curv">
-        <polyline id="curv-full"   fill="none" stroke="#e0e0e0" stroke-width="1"   stroke-linejoin="round"/>
-        <polyline id="curv-visited" fill="none" stroke="#b83232" stroke-width="2"   stroke-linejoin="round"/>
-        <line     id="curv-cursor" stroke="#aaa" stroke-width="1" stroke-dasharray="3,3"/>
+        <polyline id="curv-full"    fill="none" stroke="#e0e0e0" stroke-width="1" stroke-linejoin="round"/>
+        <polyline id="curv-visited" fill="none" stroke="#b83232" stroke-width="2" stroke-linejoin="round"/>
+        <line     id="curv-cursor"  stroke="#aaa" stroke-width="1" stroke-dasharray="3,3"/>
       </g>
 
       <!-- ── Panel 3: Log–log ────────────────────────────────────────────── -->
-      <text x="745" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#555">Speed vs Curvature (log–log)</text>
+      <text id="ll-title" x="745" y="34" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="12" fill="#555"/>
       <g id="g-loglog">
-        <!-- Axis labels and legend sit outside the data clip -->
         <text id="ll-xlabel" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="11" fill="#888"/>
         <text id="ll-ylabel" text-anchor="middle" font-family="Helvetica,sans-serif" font-size="11" fill="#888" transform="rotate(-90)"/>
         <g id="ll-legend"/>
-        <!-- Everything inside this group is clipped to the plot rectangle -->
         <g clip-path="url(#ll-plot-clip)">
           <g id="loglog-scatter"/>
           <line id="ll-fit-line" stroke="#1a5fa8" stroke-width="1.5"/>
@@ -152,7 +166,6 @@
           <g id="loglog-trail"/>
           <circle id="loglog-dot" r="5" fill="#b83232"/>
         </g>
-        <!-- Border drawn on top so it's always visible -->
         <rect id="ll-border" fill="none" stroke="#ddd" stroke-width="1"/>
       </g>
     </svg>
@@ -174,8 +187,19 @@ const CURV    = { x1: 0,   y1: 0,  x2: 270, y2: 150 };
 const LL_G    = { tx: 570, ty: 45 };
 const LL      = { x1: 30,  y1: 5,  x2: 295, y2: 355 };
 
-const TRAIL_WIN = 1.0;   // seconds
-const LL_TRAIL  = 40;    // max circles on log–log trail
+const TRAIL_WIN = 1.0;
+const LL_TRAIL  = 40;
+const FRAME_LEN = 35;   // SVG px for Frenet vectors
+const VEL_ARROW_LEN = 50; // SVG px for max-speed velocity arrow
+
+// ─── Pair config ──────────────────────────────────────────────────────────────
+const PAIRS = {
+  v_kappa:      { xCol: 'log_curvature', yCol: 'log_speed', xLabel: 'log κ', yLabel: 'log v', title: 'Speed vs Curvature (log–log)',        yDataCol: 'speed', xDataCol: 'curvature', yPanelLabel: 'Speed',         xPanelLabel: 'Curvature', showVelArrow: true  },
+  v_radius:     { xCol: 'log_radius',    yCol: 'log_speed', xLabel: 'log R', yLabel: 'log v', title: 'Speed vs Radius (log–log)',            yDataCol: 'speed', xDataCol: 'radius',    yPanelLabel: 'Speed',         xPanelLabel: 'Radius',    showVelArrow: true  },
+  omega_kappa:  { xCol: 'log_curvature', yCol: 'log_omega', xLabel: 'log κ', yLabel: 'log ω', title: 'Ang. velocity vs Curvature (log–log)', yDataCol: 'omega', xDataCol: 'curvature', yPanelLabel: 'Ang. velocity', xPanelLabel: 'Curvature', showVelArrow: false },
+  omega_radius: { xCol: 'log_radius',    yCol: 'log_omega', xLabel: 'log R', yLabel: 'log ω', title: 'Ang. velocity vs Radius (log–log)',    yDataCol: 'omega', xDataCol: 'radius',    yPanelLabel: 'Ang. velocity', xPanelLabel: 'Radius',    showVelArrow: false },
+};
+let currentPair = 'v_kappa';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let data = [], meta = {}, scales = {};
@@ -207,7 +231,7 @@ function pts2str(arr) {
 
 // ─── Data loading ─────────────────────────────────────────────────────────────
 async function loadData(filename) {
-  const text  = await (await fetch(`./${filename}`)).text();
+  const text = await (await fetch(`./${filename}`)).text();
   meta = {};
   const dataLines = [];
   for (const line of text.split('\n')) {
@@ -235,69 +259,68 @@ function setupScales() {
   const cx = (TRAJ.x1+TRAJ.x2)/2, cy = (TRAJ.y1+TRAJ.y2)/2;
   scales.trajX     = v => cx + (v - (xMin+xMax)/2) * sc;
   scales.trajY     = v => cy - (v - (yMin+yMax)/2) * sc;
-  scales.trajScale = sc;   // data-units → SVG pixels, for converting radius
+  scales.trajScale = sc;
 
-  // Time → x for both time panels
+  scales.maxSpeed = Math.max(...data.map(d => d.speed));
+
+  // Time axis (x shared for both panels; y-scales depend on pair, set in buildTimeseries)
   const tMin = data[0].t, tMax = data[data.length-1].t;
   scales.speedX = linearScale(tMin, tMax, SPEED.x1, SPEED.x2);
   scales.curvX  = linearScale(tMin, tMax, CURV.x1,  CURV.x2);
-  scales.speedY = linearScale(Math.min(...data.map(d=>d.speed)),     Math.max(...data.map(d=>d.speed)),     SPEED.y2-5, SPEED.y1+5);
-  scales.curvY  = linearScale(Math.min(...data.map(d=>d.curvature)), Math.max(...data.map(d=>d.curvature)), CURV.y2-5,  CURV.y1+5);
-
-  // Log–log
-  const valid = data.filter(d => !isNaN(d.log_speed));
-  const lkMin = Math.min(...valid.map(d=>d.log_curvature))-0.2, lkMax = Math.max(...valid.map(d=>d.log_curvature))+0.2;
-  const lvMin = Math.min(...valid.map(d=>d.log_speed))-0.2,     lvMax = Math.max(...valid.map(d=>d.log_speed))+0.2;
-  scales.llX = linearScale(lkMin, lkMax, LL.x1, LL.x2);
-  scales.llY = linearScale(lvMin, lvMax, LL.y2, LL.y1);
-  scales.lkMin = lkMin; scales.lkMax = lkMax;
-  scales.maxSpeed = Math.max(...data.map(d => d.speed));
 }
 
-// ─── Build statics ────────────────────────────────────────────────────────────
-function buildStatics() {
-  trajPts   = data.map(d => ({ sx: scales.trajX(d.x),  sy: scales.trajY(d.y) }));
-  speedPts  = data.map(d => ({ sx: scales.speedX(d.t), sy: scales.speedY(d.speed) }));
-  curvPts   = data.map(d => ({ sx: scales.curvX(d.t),  sy: scales.curvY(d.curvature) }));
-  loglogPts = data.map(d => ({
-    sx: isNaN(d.log_curvature) ? null : scales.llX(d.log_curvature),
-    sy: isNaN(d.log_speed)     ? null : scales.llY(d.log_speed),
-    valid: !isNaN(d.log_speed) && !isNaN(d.log_curvature)
-  }));
+function setupLoglogScales() {
+  const { xCol, yCol } = PAIRS[currentPair];
+  const valid = data.filter(d => !isNaN(d[xCol]) && !isNaN(d[yCol]));
+  const xMin = Math.min(...valid.map(d=>d[xCol]))-0.2, xMax = Math.max(...valid.map(d=>d[xCol]))+0.2;
+  const yMin = Math.min(...valid.map(d=>d[yCol]))-0.2, yMax = Math.max(...valid.map(d=>d[yCol]))+0.2;
+  scales.llX    = linearScale(xMin, xMax, LL.x1, LL.x2);
+  scales.llY    = linearScale(yMin, yMax, LL.y2, LL.y1);
+  scales.llXMin = xMin; scales.llXMax = xMax;
+}
 
-  // ── Trajectory ──────────────────────────────────────────────────────────
-  $('g-traj').setAttribute('transform', '');
-  $('traj-full').setAttribute('points', pts2str(trajPts));
-  // traj-gray starts empty — grows in render()
-
-
-  // ── Speed / Curvature ────────────────────────────────────────────────────
-  $('g-speed').setAttribute('transform', `translate(${SPEED_G.tx},${SPEED_G.ty})`);
-  $('g-curv').setAttribute('transform',  `translate(${CURV_G.tx},${CURV_G.ty})`);
-
-  // Full ghost waveforms — built once, always visible
+// ─── Build time-series panels ─────────────────────────────────────────────────
+function buildTimeseries() {
+  const { yDataCol, xDataCol, yPanelLabel, xPanelLabel } = PAIRS[currentPair];
+  const yVals = data.map(d => d[yDataCol]);
+  const xVals = data.map(d => d[xDataCol]);
+  scales.speedY = linearScale(Math.min(...yVals), Math.max(...yVals), SPEED.y2-5, SPEED.y1+5);
+  scales.curvY  = linearScale(Math.min(...xVals), Math.max(...xVals), CURV.y2-5,  CURV.y1+5);
+  speedPts = data.map(d => ({ sx: scales.speedX(d.t), sy: scales.speedY(d[yDataCol]) }));
+  curvPts  = data.map(d => ({ sx: scales.curvX(d.t),  sy: scales.curvY(d[xDataCol]) }));
   $('speed-full').setAttribute('points', pts2str(speedPts));
   $('curv-full').setAttribute('points',  pts2str(curvPts));
+  $('speed-label').textContent = yPanelLabel;
+  $('curv-label').textContent  = xPanelLabel;
+}
 
-  setAttrs($('speed-cursor'), { x1: SPEED.x1, x2: SPEED.x1, y1: SPEED.y1, y2: SPEED.y2 });
-  setAttrs($('curv-cursor'),  { x1: CURV.x1,  x2: CURV.x1,  y1: CURV.y1,  y2: CURV.y2  });
+// ─── Build log–log panel ──────────────────────────────────────────────────────
+function buildLoglog() {
+  setupLoglogScales();
 
-  // ── Log–log ──────────────────────────────────────────────────────────────
-  $('g-loglog').setAttribute('transform', `translate(${LL_G.tx},${LL_G.ty})`);
+  const { xCol, yCol, xLabel, yLabel, title } = PAIRS[currentPair];
 
-  // Set clip rect to the plot area (local coords)
+  // Recompute projected points for this pair
+  loglogPts = data.map(d => {
+    const xv = d[xCol], yv = d[yCol];
+    const valid = !isNaN(xv) && !isNaN(yv);
+    return { sx: valid ? scales.llX(xv) : null, sy: valid ? scales.llY(yv) : null, valid };
+  });
+
+  // Panel title
+  $('ll-title').textContent = title;
+
+  // Clip rect and border
   setAttrs($('ll-plot-clip-rect'), { x: LL.x1, y: LL.y1, width: LL.x2-LL.x1, height: LL.y2-LL.y1 });
-
-  // Border rect
-  setAttrs($('ll-border'), { x: LL.x1, y: LL.y1, width: LL.x2-LL.x1, height: LL.y2-LL.y1 });
+  setAttrs($('ll-border'),         { x: LL.x1, y: LL.y1, width: LL.x2-LL.x1, height: LL.y2-LL.y1 });
 
   // Axis labels
   setAttrs($('ll-xlabel'), { x: (LL.x1+LL.x2)/2, y: LL.y2+18 });
-  $('ll-xlabel').textContent = 'log κ';
+  $('ll-xlabel').textContent = xLabel;
   setAttrs($('ll-ylabel'), { x: -(LL.y1+LL.y2)/2, y: LL.x1-18 });
-  $('ll-ylabel').textContent = 'log v';
+  $('ll-ylabel').textContent = yLabel;
 
-  // Background scatter (all valid points, gray)
+  // Background scatter
   const scatter = $('loglog-scatter');
   scatter.innerHTML = '';
   loglogPts.forEach(p => {
@@ -305,15 +328,11 @@ function buildStatics() {
   });
 
   // Regression lines
-  const lkMin = scales.lkMin, lkMax = scales.lkMax;
-  setAttrs($('ll-fit-line'), {
-    x1: scales.llX(lkMin), y1: scales.llY(meta.fit_slope * lkMin + meta.fit_intercept),
-    x2: scales.llX(lkMax), y2: scales.llY(meta.fit_slope * lkMax + meta.fit_intercept)
-  });
-  setAttrs($('ll-ref-line'), {
-    x1: scales.llX(lkMin), y1: scales.llY(meta.ref_slope * lkMin + meta.ref_intercept),
-    x2: scales.llX(lkMax), y2: scales.llY(meta.ref_slope * lkMax + meta.ref_intercept)
-  });
+  const fitSlope  = meta[`${currentPair}_fit_slope`],  fitInt  = meta[`${currentPair}_fit_intercept`];
+  const refSlope  = meta[`${currentPair}_ref_slope`],  refInt  = meta[`${currentPair}_ref_intercept`];
+  const x0 = scales.llXMin, x1 = scales.llXMax;
+  setAttrs($('ll-fit-line'), { x1: scales.llX(x0), y1: scales.llY(fitSlope*x0+fitInt), x2: scales.llX(x1), y2: scales.llY(fitSlope*x1+fitInt) });
+  setAttrs($('ll-ref-line'), { x1: scales.llX(x0), y1: scales.llY(refSlope*x0+refInt), x2: scales.llX(x1), y2: scales.llY(refSlope*x1+refInt) });
 
   // Legend
   const legend = $('ll-legend');
@@ -322,12 +341,12 @@ function buildStatics() {
   legend.appendChild(svgEl('line', { x1: LL.x1+4, y1: ly,    x2: LL.x1+20, y2: ly,    stroke: '#1a5fa8', 'stroke-width': '1.5' }));
   legend.appendChild(svgEl('line', { x1: LL.x1+4, y1: ly+14, x2: LL.x1+20, y2: ly+14, stroke: '#b83232', 'stroke-width': '1.5', 'stroke-dasharray': '5,4' }));
   const t1 = svgEl('text', { x: LL.x1+24, y: ly+4,  'font-family': 'Helvetica,sans-serif', 'font-size': '10', fill: '#555' });
-  t1.textContent = `Fit  (β = ${meta.fit_slope.toFixed(2)})`;
+  t1.textContent = `Fit  (β = ${fitSlope.toFixed(2)})`;
   const t2 = svgEl('text', { x: LL.x1+24, y: ly+18, 'font-family': 'Helvetica,sans-serif', 'font-size': '10', fill: '#555' });
-  t2.textContent = '2/3 power law  (β = −0.33)';
+  t2.textContent = `Theory  (β = ${refSlope.toFixed(2)})`;
   legend.appendChild(t1); legend.appendChild(t2);
 
-  // Pre-create log–log trail circles
+  // Trail circles
   const llTrl = $('loglog-trail');
   llTrl.innerHTML = '';
   llTrailCircles = [];
@@ -338,8 +357,28 @@ function buildStatics() {
   }
 }
 
+// ─── Build statics ────────────────────────────────────────────────────────────
+function buildStatics() {
+  trajPts = data.map(d => ({ sx: scales.trajX(d.x), sy: scales.trajY(d.y) }));
+
+  // Trajectory
+  $('g-traj').setAttribute('transform', '');
+  $('traj-full').setAttribute('points', pts2str(trajPts));
+
+  // Time panels — transforms and cursors only; data rebuilt in buildTimeseries
+  $('g-speed').setAttribute('transform', `translate(${SPEED_G.tx},${SPEED_G.ty})`);
+  $('g-curv').setAttribute('transform',  `translate(${CURV_G.tx},${CURV_G.ty})`);
+  setAttrs($('speed-cursor'), { x1: SPEED.x1, x2: SPEED.x1, y1: SPEED.y1, y2: SPEED.y2 });
+  setAttrs($('curv-cursor'),  { x1: CURV.x1,  x2: CURV.x1,  y1: CURV.y1,  y2: CURV.y2  });
+
+  // Log–log
+  $('g-loglog').setAttribute('transform', `translate(${LL_G.tx},${LL_G.ty})`);
+
+  buildTimeseries();
+  buildLoglog();
+}
+
 // ─── Trail helper ─────────────────────────────────────────────────────────────
-// Collect up to maxN indices ≤ idx with data time ≥ t_cur - TRAIL_WIN, valid optional.
 function collectTrail(idx, validFn, maxN) {
   const tMin = data[idx].t - TRAIL_WIN;
   const out  = [];
@@ -355,11 +394,8 @@ function updateCircles(circles, idxArr, ptsFn, color) {
   circles.forEach((c, ci) => {
     if (ci >= n) { c.setAttribute('visibility', 'hidden'); return; }
     const pt  = ptsFn(idxArr[ci]);
-    const age = (ci + 1) / n;   // 0 = oldest, 1 = newest
-    setAttrs(c, {
-      visibility: 'visible', cx: pt.sx.toFixed(1), cy: pt.sy.toFixed(1),
-      opacity: (0.1 + 0.9 * age).toFixed(2), fill: color
-    });
+    const age = (ci + 1) / n;
+    setAttrs(c, { visibility: 'visible', cx: pt.sx.toFixed(1), cy: pt.sy.toFixed(1), opacity: (0.1 + 0.9*age).toFixed(2), fill: color });
   });
 }
 
@@ -367,54 +403,53 @@ function updateCircles(circles, idxArr, ptsFn, color) {
 function render(idx) {
   idx = Math.max(0, Math.min(idx, data.length - 1));
   currentIdx = idx;
-  const tCur = data[idx].t;
 
-  // 1. Trajectory — ghost (full, thin gray) + growing blue visited line + velocity arrow + red dot
+  // 1. Trajectory
   $('traj-visited').setAttribute('points', pts2str(trajPts.slice(0, idx + 1)));
 
-  // Velocity arrow: direction from central difference in SVG space, length ∝ speed
   const p = trajPts[idx];
-  const iPrev = Math.max(0, idx - 1);
-  const iNext = Math.min(data.length - 1, idx + 1);
-  let dvx = trajPts[iNext].sx - trajPts[iPrev].sx;
-  let dvy = trajPts[iNext].sy - trajPts[iPrev].sy;
-  const dlen = Math.hypot(dvx, dvy);
-  if (dlen > 0.1) {
-    const arrowLen = 40 * data[idx].speed / scales.maxSpeed;
-    dvx = dvx / dlen * arrowLen;
-    dvy = dvy / dlen * arrowLen;
-    setAttrs($('vel-arrow'), { x1: p.sx, y1: p.sy, x2: p.sx + dvx, y2: p.sy + dvy, visibility: 'visible' });
+  const d = data[idx];
+
+  // Trajectory overlay: velocity arrow (v pairs) or Frenet frame (ω pairs)
+  if (PAIRS[currentPair].showVelArrow) {
+    $('frenet-t').setAttribute('visibility', 'hidden');
+    $('frenet-n').setAttribute('visibility', 'hidden');
+    if (!isNaN(d.tx) && !isNaN(d.ty)) {
+      const lenPx = (d.speed / scales.maxSpeed) * VEL_ARROW_LEN;
+      setAttrs($('vel-arrow'), { x1: p.sx, y1: p.sy, x2: (p.sx + d.tx * lenPx).toFixed(1), y2: (p.sy - d.ty * lenPx).toFixed(1), visibility: 'visible' });
+    } else { $('vel-arrow').setAttribute('visibility', 'hidden'); }
   } else {
     $('vel-arrow').setAttribute('visibility', 'hidden');
+    if (!isNaN(d.tx) && !isNaN(d.ty)) {
+      setAttrs($('frenet-t'), { x1: p.sx, y1: p.sy, x2: (p.sx + d.tx * FRAME_LEN).toFixed(1), y2: (p.sy - d.ty * FRAME_LEN).toFixed(1), visibility: 'visible' });
+    } else { $('frenet-t').setAttribute('visibility', 'hidden'); }
+    if (!isNaN(d.nx) && !isNaN(d.ny)) {
+      setAttrs($('frenet-n'), { x1: p.sx, y1: p.sy, x2: (p.sx + d.nx * FRAME_LEN).toFixed(1), y2: (p.sy - d.ny * FRAME_LEN).toFixed(1), visibility: 'visible' });
+    } else { $('frenet-n').setAttribute('visibility', 'hidden'); }
   }
 
-  // Osculating circle: centre from data, radius = 1/curvature, both scaled to SVG
-  const d = data[idx];
+  // Osculating circle
   const oscR = (1 / (d.curvature + 1e-12)) * scales.trajScale;
   if (!isNaN(d.osc_cx) && !isNaN(d.osc_cy) && oscR < 600) {
     setAttrs($('osc-circle'), {
-      cx: scales.trajX(d.osc_cx).toFixed(1),
-      cy: scales.trajY(d.osc_cy).toFixed(1),
-      r:  oscR.toFixed(1),
-      visibility: 'visible'
+      cx: scales.trajX(d.osc_cx).toFixed(1), cy: scales.trajY(d.osc_cy).toFixed(1),
+      r: oscR.toFixed(1), visibility: 'visible'
     });
-  } else {
-    $('osc-circle').setAttribute('visibility', 'hidden');
-  }
+  } else { $('osc-circle').setAttribute('visibility', 'hidden'); }
 
-  setAttrs($('traj-dot'), { cx: trajPts[idx].sx, cy: trajPts[idx].sy });
+  setAttrs($('traj-dot'), { cx: p.sx, cy: p.sy });
 
-  // 2. Speed — growing blue visited line + cursor
+  // 2. Speed
   const sxCur = speedPts[idx].sx;
   setAttrs($('speed-cursor'), { x1: sxCur, x2: sxCur, y1: SPEED.y1, y2: SPEED.y2 });
   $('speed-visited').setAttribute('points', pts2str(speedPts.slice(0, idx + 1)));
 
-  // 3. Curvature — growing red visited line + cursor
+  // 3. Curvature
   const cxCur = curvPts[idx].sx;
   setAttrs($('curv-cursor'), { x1: cxCur, x2: cxCur, y1: CURV.y1, y2: CURV.y2 });
   $('curv-visited').setAttribute('points', pts2str(curvPts.slice(0, idx + 1)));
 
-  // 4. Log–log — 1-sec trail + red dot
+  // 4. Log–log trail + dot
   const llIdxs = collectTrail(idx, i => loglogPts[i].valid, LL_TRAIL);
   updateCircles(llTrailCircles, llIdxs, i => loglogPts[i], '#1a5fa8');
 
@@ -433,16 +468,13 @@ function render(idx) {
 // ─── Animation ────────────────────────────────────────────────────────────────
 function tick(wallNow) {
   if (!playback.playing) return;
-  const elapsed = (wallNow - playback.startWall) / 1000 * playback.speed;
-  const targetT = data[playback.startIdx].t + elapsed;
+  const elapsed  = (wallNow - playback.startWall) / 1000 * playback.speed;
+  const targetT  = data[playback.startIdx].t + elapsed;
   let newIdx = playback.startIdx;
   while (newIdx < data.length - 1 && data[newIdx].t < targetT) newIdx++;
   render(newIdx);
-  if (newIdx < data.length - 1) {
-    rafId = requestAnimationFrame(tick);
-  } else {
-    playback.playing = false; updatePlayBtn();
-  }
+  if (newIdx < data.length - 1) { rafId = requestAnimationFrame(tick); }
+  else { playback.playing = false; updatePlayBtn(); }
 }
 
 function startPlay() {
@@ -476,6 +508,13 @@ async function init(filename) {
 $('btn-play').addEventListener('click',  () => { playback.playing ? pausePlay() : startPlay(); });
 $('btn-reset').addEventListener('click', () => { pausePlay(); currentIdx = 0; render(0); });
 $('sel-dataset').addEventListener('change', e => init(e.target.value));
+
+$('sel-pair').addEventListener('change', e => {
+  currentPair = e.target.value;
+  buildTimeseries();
+  buildLoglog();
+  render(currentIdx);
+});
 
 document.querySelectorAll('.speed-btn').forEach(btn => {
   btn.addEventListener('click', () => {

@@ -14,7 +14,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font-serif); font-size: 16px; line-height: 1.7; }
-  .page-wrapper { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+  .page-wrapper { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
   .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; margin-bottom: 40px; border-bottom: 1px solid transparent; transition: color .15s, border-color .15s; }
   .back-link:hover { color: var(--accent); border-color: var(--accent); }
   header { margin-bottom: 36px; }
@@ -23,35 +23,37 @@
   .subtitle { font-size: 15px; color: var(--text-muted); font-style: italic; }
   .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 
-  /* ── Control panel ───────────────────────────────────────────────────────── */
   .controls {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 4px; padding: 14px 24px;
-    display: flex; align-items: center; gap: 14px;
-    margin-bottom: 14px; flex-wrap: wrap;
+    border-radius: 4px; padding: 10px 20px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 8px;
   }
   .ctrl-btn {
-    font-family: var(--font-mono); font-size: 11px; padding: 6px 20px;
+    font-family: var(--font-mono); font-size: 11px; padding: 5px 16px;
     border: 1.5px solid var(--border); border-radius: 3px;
     background: var(--surface); color: var(--text-muted);
-    cursor: pointer; letter-spacing: .06em; text-transform: uppercase;
-    transition: all .15s;
+    cursor: pointer; letter-spacing: .06em; text-transform: uppercase; transition: all .15s;
   }
-  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .ctrl-btn.primary { border-color: var(--accent); color: var(--accent); }
-  .ctrl-btn.primary:hover { background: var(--accent); color: #fff; }
-  .hint {
-    font-family: var(--font-mono); font-size: 12px;
-    color: var(--text-muted); margin-left: auto;
-  }
-  .hint.warn { color: #b83232; }
+  .ctrl-btn:hover  { border-color: var(--accent); color: var(--accent); }
+  .ctrl-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .ctrl-sep   { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+  .ctrl-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+  .ctrl-value { font-family: var(--font-mono); font-size: 11px; color: var(--text); min-width: 36px; }
+  input[type=range] { accent-color: var(--accent); cursor: pointer; width: 110px; }
+  .ctrl-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+  .ctrl-hint.warn { color: #b83232; }
 
-  /* ── Display area ────────────────────────────────────────────────────────── */
-  .display-panel {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 4px; overflow: hidden; cursor: default;
-  }
+  .display-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
   .display-panel svg { display: block; width: 100%; }
+
+  .plots-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .plot-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; height: 160px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .plot-label { font-family: var(--font-mono); font-size: 11px; color: var(--border); letter-spacing: .08em; text-transform: uppercase; }
 
   footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   footer a { color: var(--text-muted); text-decoration: underline; }
@@ -65,44 +67,89 @@
 
   <header>
     <div class="tag">Interactive Simulation</div>
-    <h1>IMU: Planar Arm Motion</h1>
-    <p class="subtitle">Companion simulation for the blog post on inertial measurement units</p>
+    <h1>IMU Data During Planar Motion</h1>
+    <p class="subtitle">What does an inertial measurement unit actually record during a straight arm movement?</p>
   </header>
 
   <hr class="divider">
 
-  <!-- ── Controls ──────────────────────────────────────────────────────────── -->
   <div class="controls">
-    <button class="ctrl-btn"         id="btn-reset">Reset</button>
-    <button class="ctrl-btn primary" id="btn-random">Random positions</button>
-    <span class="hint" id="hint-text">Click to set start position</span>
+    <button class="ctrl-btn" id="btn-reset">Reset</button>
+    <button class="ctrl-btn" id="btn-play" disabled>▶ Play</button>
+    <div class="ctrl-sep"></div>
+    <span class="ctrl-label">Duration</span>
+    <input type="range" id="dur-slider" min="0.5" max="5" step="0.1" value="2">
+    <span class="ctrl-value" id="dur-value">2.0 s</span>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" id="btn-gravity">Gravity: Off</button>
+    <div class="ctrl-sep"></div>
+    <span class="ctrl-hint" id="hint-text">Click to set start position</span>
   </div>
 
-  <!-- ── Display ───────────────────────────────────────────────────────────── -->
   <div class="display-panel" id="display-panel">
-    <svg id="arm-svg" viewBox="0 0 640 560" preserveAspectRatio="xMidYMid meet" height="560">
+    <!--
+      ViewBox: 700 × 540
+      Workspace SVG rect: x=[50,650], y=[40,460]  →  600 × 420 px
+      SCALE = 420 px/m  (y-axis = 1 m, x-axis = 600/420 ≈ 1.43 m)
+      World origin (CX,CY) = (350, 250)
+    -->
+    <svg id="main-svg" viewBox="0 0 700 540" preserveAspectRatio="xMidYMid meet" height="540">
+      <defs>
+        <marker id="g-head"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker>
+        <marker id="wx-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
+        <marker id="wy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
+        <marker id="ix-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
+        <marker id="iy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
+      </defs>
 
-      <!-- Reachable workspace region (annulus, evenodd fill) -->
-      <path id="workspace-region" fill="#dce8f7" fill-opacity="0.45" stroke="#9ab4d4" stroke-width="1" fill-rule="evenodd"/>
 
-      <!-- Links -->
-      <line id="link1" stroke="#444" stroke-width="3"   stroke-linecap="round"/>
-      <line id="link2" stroke="#777" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- ── Gravity indicator (top-right, outside workspace) ──────────── -->
+      <g id="g-gravity" transform="translate(668,48)">
+        <line x1="0" y1="0" x2="0" y2="32" stroke="#111" stroke-width="1.5" marker-end="url(#g-head)"/>
+        <text x="9" y="20" font-family="Helvetica,sans-serif" font-size="13" fill="#111" font-style="italic">g</text>
+      </g>
 
-      <!-- Joints -->
-      <circle id="dot-shoulder" r="6" fill="#1a5fa8"/>
-      <circle id="dot-elbow"    r="4" fill="#555"/>
-      <circle id="dot-hand"     r="4" fill="#555"/>
+      <!-- ── World frame (bottom-left, outside workspace) ──────────────── -->
+      <g transform="translate(22,496)">
+        <line x1="0" y1="0" x2="28" y2="0"  stroke="#c0392b" stroke-width="1.5" marker-end="url(#wx-head)"/>
+        <text x="34" y="4"  font-family="Helvetica,sans-serif" font-size="11" fill="#c0392b" font-style="italic">x</text>
+        <line x1="0" y1="0" x2="0"  y2="-28" stroke="#2980b9" stroke-width="1.5" marker-end="url(#wy-head)"/>
+        <text x="-4" y="-33" font-family="Helvetica,sans-serif" font-size="11" fill="#2980b9" font-style="italic">y</text>
+        <circle cx="0" cy="0" r="2.5" fill="#555"/>
+        <text x="-10" y="14" font-family="Menlo,monospace" font-size="8" fill="#bbb" letter-spacing="0.04em">WORLD</text>
+      </g>
 
-      <!-- Start marker -->
-      <circle id="mark-start"       r="9" fill="none" stroke="#2a7a3a" stroke-width="2" visibility="hidden"/>
-      <circle id="mark-start-inner" r="3" fill="#2a7a3a"                                visibility="hidden"/>
+      <!-- ── Movement path ─────────────────────────────────────────────── -->
+      <line id="path-line" stroke="#bbb" stroke-width="1.5" stroke-dasharray="6,4" visibility="hidden"/>
 
-      <!-- End marker -->
-      <circle id="mark-end"       r="9" fill="none" stroke="#b83232" stroke-width="2" visibility="hidden"/>
-      <circle id="mark-end-inner" r="3" fill="#b83232"                                visibility="hidden"/>
+      <!-- ── Start marker ───────────────────────────────────────────────── -->
+      <circle id="mark-start"       r="8" fill="none" stroke="#2980b9" stroke-width="2" visibility="hidden"/>
+      <circle id="mark-start-inner" r="3" fill="#2980b9"                               visibility="hidden"/>
+
+      <!-- ── End marker ─────────────────────────────────────────────────── -->
+      <circle id="mark-end"       r="8" fill="none" stroke="#c0392b" stroke-width="2" visibility="hidden"/>
+      <circle id="mark-end-inner" r="3" fill="#c0392b"                               visibility="hidden"/>
+
+      <!-- ── Position labels (bottom strip) ────────────────────────────── -->
+      <text id="pos-start" x="55"  y="520" font-family="Menlo,monospace" font-size="10" fill="#2980b9" visibility="hidden"/>
+      <text id="pos-end"   x="370" y="520" font-family="Menlo,monospace" font-size="10" fill="#c0392b" visibility="hidden"/>
+
+      <!-- ── IMU body ───────────────────────────────────────────────────── -->
+      <g id="g-imu" visibility="hidden">
+        <rect x="-17" y="-17" width="34" height="34" rx="6" ry="6" fill="#d8d8d8" stroke="#999" stroke-width="1.2"/>
+        <text x="0" y="14" text-anchor="middle" font-family="Menlo,monospace" font-size="8" fill="#666" letter-spacing="0.06em">IMU</text>
+        <circle cx="0" cy="0" r="1.5" fill="#555"/>
+        <line x1="0" y1="0" x2="16" y2="0"  stroke="#c0392b" stroke-width="1.0" marker-end="url(#ix-head)"/>
+        <line x1="0" y1="0" x2="0" y2="-16" stroke="#2980b9" stroke-width="1.0" marker-end="url(#iy-head)"/>
+      </g>
 
     </svg>
+  </div>
+
+  <div class="plots-area">
+    <div class="plot-panel"><span class="plot-label">Position · world frame</span></div>
+    <div class="plot-panel"><span class="plot-label">Velocity · world frame</span></div>
+    <div class="plot-panel"><span class="plot-label">Acceleration · world frame + IMU</span></div>
   </div>
 
   <footer>
@@ -112,218 +159,371 @@
 
 </div>
 <script>
-// ─── Geometry ─────────────────────────────────────────────────────────────────
-const SVG_W = 640, SVG_H = 560;
-const L1 = 150, L2 = 110;          // link lengths (px)
-const D_MAX = L1 + L2;             // 260 px  — max reach
-const D_MIN = Math.abs(L1 - L2);   // 40 px   — min reach
+// ─── Constants ────────────────────────────────────────────────────────────────
+const SVG_W   = 700, SVG_H = 540;
+const CX      = SVG_W / 2;
+const CY      = SVG_H / 2;
+const SCALE   = 480;     // px/m
+const EDGE    = 10;
+const MIN_SEP = 0.15;    // m
+const FS      = 100;     // Hz
+const DT      = 1 / FS;
+const G       = 9.81;    // m/s²
 
-// Shoulder centred in the viewBox so the full annulus (r=40..260) is visible.
-// Shoulder angle convention: 0° = arm pointing straight DOWN,
-//   positive = counterclockwise (toward front/up).
-// No joint angle limits — only physical reach bounds apply.
-//
-// Annulus fits inside 640×560 with 20 px margin when shoulder is centred:
-//   SX = 640/2 = 320, SY = 560/2 = 280.
-const SX = 320, SY = 280;
-const MARGIN = 20;
-const DEG = Math.PI / 180;
+// ─── Coordinate transforms ────────────────────────────────────────────────────
+const wx2sx = wx => CX + wx * SCALE;
+const wy2sy = wy => CY - wy * SCALE;
+const sx2wx = sx => (sx - CX) / SCALE;
+const sy2wy = sy => -(sy - CY) / SCALE;
 
-const MIN_SEP = 0.25 * D_MAX;      // minimum start–end separation (65 px)
-
-// ─── Angle conversion ─────────────────────────────────────────────────────────
-// User angle (deg):  0° = down, positive = CCW toward up/front
-// SVG angle  (rad):  0 = right (+x), positive = CW (y-down coords)
-const userToSvg = deg => Math.PI / 2 - deg * DEG;
-
-// ─── Forward kinematics ───────────────────────────────────────────────────────
-function fk(t1, t2) {
-  const ex = SX + L1 * Math.cos(t1),      ey = SY + L1 * Math.sin(t1);
-  const hx = ex + L2 * Math.cos(t1 + t2), hy = ey + L2 * Math.sin(t1 + t2);
-  return { ex, ey, hx, hy };
-}
-
-// ─── IK solver ────────────────────────────────────────────────────────────────
-// Returns { t1, t2 } or null if outside physical reach bounds.
-// Elbow-up solution (t2 ≤ 0).  No joint angle limits.
-function solveIK(tx, ty) {
-  const dx = tx - SX, dy = ty - SY;
-  const d  = Math.hypot(dx, dy);
-  if (d > D_MAX || d < D_MIN) return null;
-
-  const alpha = Math.atan2(dy, dx);
-  const cosT2 = (d * d - L1 * L1 - L2 * L2) / (2 * L1 * L2);
-  const t2    = -Math.acos(Math.max(-1, Math.min(1, cosT2)));  // ≤ 0 (elbow-up)
-  const beta  = Math.atan2(L2 * Math.sin(t2), L1 + L2 * Math.cos(t2));
-  const t1    = alpha - beta;
-
-  return { t1, t2 };
+function inBounds(sx, sy) {
+  return sx >= EDGE && sx <= SVG_W - EDGE && sy >= EDGE && sy <= SVG_H - EDGE;
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
-let phase    = 'start';   // 'start' | 'end' | 'done'
+let phase = 'start';   // 'start' | 'end' | 'ready' | 'playing'
 let posStart = null, posEnd = null;
-let curT1, curT2;         // current joint angles
+let gravityOn = false;
+let animId = null, animT0 = null;
+let traj = null;
 
 // ─── SVG helpers ──────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
-function setLine(id, x1, y1, x2, y2) {
-  const el = $(id);
-  ['x1','y1','x2','y2'].forEach((a, i) => el.setAttribute(a, [x1,y1,x2,y2][i]));
+function clientToSvg(cx, cy) {
+  const pt = $('main-svg').createSVGPoint();
+  pt.x = cx; pt.y = cy;
+  return pt.matrixTransform($('main-svg').getScreenCTM().inverse());
 }
-function setCirclePos(id, cx, cy) {
-  $(id).setAttribute('cx', cx); $(id).setAttribute('cy', cy);
-}
-function showMarker(prefix, x, y) {
-  [`mark-${prefix}`, `mark-${prefix}-inner`].forEach(id => {
-    setCirclePos(id, x, y);
-    $(id).setAttribute('visibility', 'visible');
+function showEl(id) { $(id).setAttribute('visibility', 'visible'); }
+function hideEl(id) { $(id).setAttribute('visibility', 'hidden'); }
+function placeMarker(pfx, sx, sy) {
+  [`mark-${pfx}`, `mark-${pfx}-inner`].forEach(id => {
+    $(id).setAttribute('cx', sx); $(id).setAttribute('cy', sy); showEl(id);
   });
 }
-function hideMarker(prefix) {
-  [`mark-${prefix}`, `mark-${prefix}-inner`].forEach(id =>
-    $(id).setAttribute('visibility', 'hidden'));
+function placeIMU(sx, sy, deg) {
+  $('g-imu').setAttribute('transform',
+    `translate(${sx.toFixed(1)},${sy.toFixed(1)}) rotate(${(-deg).toFixed(2)})`);
+  showEl('g-imu');
+}
+function setHint(msg, warn = false) {
+  const el = $('hint-text');
+  el.textContent = msg;
+  el.className = 'ctrl-hint' + (warn ? ' warn' : '');
 }
 
-// ─── Draw arm ─────────────────────────────────────────────────────────────────
-function drawArm(t1, t2) {
-  curT1 = t1; curT2 = t2;
-  const { ex, ey, hx, hy } = fk(t1, t2);
-  setLine('link1', SX, SY, ex, ey);
-  setLine('link2', ex, ey, hx, hy);
-  setCirclePos('dot-shoulder', SX, SY);
-  setCirclePos('dot-elbow', ex, ey);
-  setCirclePos('dot-hand', hx, hy);
-}
+// ─── Trajectory: minimum-jerk straight-line motion ───────────────────────────
+function buildTrajectory() {
+  const T  = parseFloat($('dur-slider').value);
+  const dx = posEnd.wx - posStart.wx;
+  const dy = posEnd.wy - posStart.wy;
+  const theta = Math.atan2(dy, dx);      // world-frame angle of motion
+  const N = Math.round(T * FS) + 1;
+  const c = 1, s = 0;   // IMU stays world-aligned throughout
 
-// ─── Workspace annulus ────────────────────────────────────────────────────────
-// Without joint limits the workspace is a full annulus (inner r=D_MIN, outer r=D_MAX).
-// Two counter-wound circles with fill-rule="evenodd" create the ring.
-function buildWorkspace() {
-  const ro = D_MAX, ri = D_MIN;
-  const circle = (cx, cy, r, cw) => {
-    const s = cw ? 1 : 0;
-    return `M ${cx - r} ${cy} A ${r} ${r} 0 1 ${s} ${cx + r} ${cy} A ${r} ${r} 0 1 ${s} ${cx - r} ${cy} Z`;
-  };
-  $('workspace-region').setAttribute('d', circle(SX, SY, ro, true) + ' ' + circle(SX, SY, ri, false));
-}
+  const t   = new Float64Array(N);
+  const x   = new Float64Array(N), y   = new Float64Array(N);
+  const vx  = new Float64Array(N), vy  = new Float64Array(N);
+  const ax  = new Float64Array(N), ay  = new Float64Array(N);
+  const asx = new Float64Array(N), asy = new Float64Array(N);
 
-// ─── Default pose ─────────────────────────────────────────────────────────────
-function defaultPose() {
-  const t1 = userToSvg(60);   // arm pointing 60° from down (roughly 30° above horizontal)
-  const t2 = -70 * DEG;       // elbow at 70° flexion
-  drawArm(t1, t2);
-}
+  for (let i = 0; i < N; i++) {
+    const ti  = i * DT;
+    const tau = ti / T;
+    const sf    =  10*tau**3 - 15*tau**4 + 6*tau**5;
+    const sfdot = (30*tau**2 - 60*tau**3 + 30*tau**4) / T;
+    const sddot = (60*tau - 180*tau**2 + 120*tau**3) / (T * T);
 
-// ─── Random workspace point ───────────────────────────────────────────────────
-function randomInWorkspace() {
-  for (let i = 0; i < 500; i++) {
-    const angle = Math.random() * 2 * Math.PI;
-    const d = D_MIN + Math.random() * (D_MAX - D_MIN);
-    const hx = SX + d * Math.cos(angle);
-    const hy = SY + d * Math.sin(angle);
-    if (hx >= MARGIN && hx <= SVG_W - MARGIN &&
-        hy >= MARGIN && hy <= SVG_H - MARGIN)
-      return { x: hx, y: hy };
+    t[i]  = ti;
+    x[i]  = posStart.wx + dx * sf;
+    y[i]  = posStart.wy + dy * sf;
+    vx[i] = dx * sfdot;
+    vy[i] = dy * sfdot;
+    ax[i] = dx * sddot;
+    ay[i] = dy * sddot;
+
+    // Specific force in world frame: f = a_world − g_vec, g_vec = [0, −G]
+    // → f_world = [ax, ay + G] (when gravity on), [ax, ay] (off)
+    // Rotate to sensor frame: f_s = Rᵀ · f_world
+    const fwy = gravityOn ? ay[i] + G : ay[i];
+    asx[i] =  c * ax[i] + s * fwy;
+    asy[i] = -s * ax[i] + c * fwy;
   }
-  return null;
+  return { t, x, y, vx, vy, ax, ay, asx, asy, theta, N, T };
 }
 
-function randomPositions() {
-  for (let i = 0; i < 1000; i++) {
-    const p1 = randomInWorkspace();
-    const p2 = randomInWorkspace();
-    if (p1 && p2 && Math.hypot(p2.x - p1.x, p2.y - p1.y) >= MIN_SEP)
-      return { p1, p2 };
+// ─── Canvas plots ─────────────────────────────────────────────────────────────
+const PAD = { t: 8, r: 12, b: 28, l: 44 };
+const COL       = { x: '#c0392b', y: '#2980b9' };
+const COL_LIGHT = { x: '#e8a8a0', y: '#a0c4e8' };
+
+function niceStep(span, n) {
+  if (span < 1e-9) return 1;
+  const raw  = span / n;
+  const mag  = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  return (norm < 1.5 ? 1 : norm < 3.5 ? 2 : norm < 7.5 ? 5 : 10) * mag;
+}
+function fmtY(v, step) {
+  const d = step < 0.005 ? 3 : step < 0.05 ? 2 : step < 0.5 ? 1 : 0;
+  return v.toFixed(d);
+}
+
+function getCanvas(panel) {
+  let cv = panel.querySelector('canvas');
+  if (!cv) {
+    const lbl = panel.querySelector('.plot-label');
+    if (lbl) lbl.style.display = 'none';
+    cv = document.createElement('canvas');
+    Object.assign(cv.style, { display: 'block', width: '100%', height: '100%' });
+    panel.appendChild(cv);
   }
-  return null;
+  const dpr = window.devicePixelRatio || 1;
+  const r   = panel.getBoundingClientRect();
+  cv.width  = Math.round(r.width  * dpr);
+  cv.height = Math.round(r.height * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w: r.width, h: r.height };
+}
+
+function drawPanel(panel, title, series, nFrame, legend) {
+  const { ctx, w, h } = getCanvas(panel);
+  const { t: pT, r: pR, b: pB, l: pL } = PAD;
+  const pw = w - pL - pR, ph = h - pT - pB;
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+
+  // y range across all series
+  let yMin = Infinity, yMax = -Infinity;
+  for (const { arr } of series) {
+    for (const v of arr) { if (v < yMin) yMin = v; if (v > yMax) yMax = v; }
+  }
+  const span = yMax - yMin;
+  if (span < 1e-6) { yMin -= 0.5; yMax += 0.5; }
+  else             { yMin -= span * 0.12; yMax += span * 0.12; }
+
+  const tx = t => pL + (t / traj.T) * pw;
+  const vy = v => pT + ph * (1 - (v - yMin) / (yMax - yMin));
+
+  // y-axis tick labels only (no grid)
+  const yStep = niceStep(yMax - yMin, 4);
+  ctx.font = '9px Menlo,monospace';
+  for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + yStep * 0.01; v += yStep) {
+    const py = vy(v);
+    if (py < pT - 1 || py > pT + ph + 1) continue;
+    ctx.fillStyle = '#bbb'; ctx.textAlign = 'right';
+    ctx.fillText(fmtY(v, yStep), pL - 4, py + 3.5);
+  }
+
+  // subtle zero line
+  if (yMin < 0 && yMax > 0) {
+    ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(pL, vy(0)); ctx.lineTo(pL + pw, vy(0)); ctx.stroke();
+  }
+
+  // x-axis baseline + ticks + labels
+  ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(pL, pT + ph); ctx.lineTo(pL + pw, pT + ph); ctx.stroke();
+  const tStep = niceStep(traj.T, 5);
+  ctx.font = '9px Menlo,monospace';
+  for (let tv = 0; tv <= traj.T + tStep * 0.01; tv += tStep) {
+    const px = tx(tv);
+    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(px, pT + ph); ctx.lineTo(px, pT + ph + 3); ctx.stroke();
+    ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
+    ctx.fillText(tv.toFixed(1), px, pT + ph + 14);
+  }
+  ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
+  ctx.fillText('t (s)', pL + pw / 2, pT + ph + 26);
+
+  // data lines up to nFrame
+  const n = Math.min(nFrame + 1, traj.N);
+  for (const { arr, col, lw } of series) {
+    ctx.strokeStyle = col; ctx.lineWidth = lw || 1.4;
+    ctx.lineJoin = 'round'; ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      i === 0 ? ctx.moveTo(tx(traj.t[i]), vy(arr[i]))
+              : ctx.lineTo(tx(traj.t[i]), vy(arr[i]));
+    }
+    ctx.stroke();
+  }
+
+  // time cursor
+  if (nFrame < traj.N - 1) {
+    const cx = tx(traj.t[nFrame]);
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, pT); ctx.lineTo(cx, pT + ph); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // title (top-left)
+  ctx.fillStyle = '#aaa'; ctx.font = '9px Menlo,monospace'; ctx.textAlign = 'left';
+  ctx.fillText(title, pL + 3, pT + 11);
+
+  // legend (top-right, right-to-left)
+  if (legend && legend.length) {
+    ctx.font = '8px Menlo,monospace';
+    let lx = pL + pw - 2;
+    for (let i = legend.length - 1; i >= 0; i--) {
+      const { col, label } = legend[i];
+      ctx.fillStyle = col; ctx.textAlign = 'right';
+      const tw = ctx.measureText(label).width;
+      ctx.fillText(label, lx, pT + 11);
+      lx -= tw + 4;
+      ctx.fillRect(lx - 8, pT + 6, 8, 2.5);
+      lx -= 13;
+    }
+  }
+}
+
+function drawAll(nFrame) {
+  const panels = document.querySelectorAll('.plot-panel');
+  const xyLegend = [{ col: COL.x, label: 'x' }, { col: COL.y, label: 'y' }];
+
+  drawPanel(panels[0], 'position  [m]',
+    [{ arr: traj.x, col: COL.x }, { arr: traj.y, col: COL.y }],
+    nFrame, xyLegend);
+
+  drawPanel(panels[1], 'velocity  [m/s]',
+    [{ arr: traj.vx, col: COL.x }, { arr: traj.vy, col: COL.y }],
+    nFrame, xyLegend);
+
+  drawPanel(panels[2], 'acceleration  [m/s²]',
+    [
+      { arr: traj.ax,  col: COL_LIGHT.x, lw: 1.2 },
+      { arr: traj.ay,  col: COL_LIGHT.y, lw: 1.2 },
+      { arr: traj.asx, col: COL.x,       lw: 1.8 },
+      { arr: traj.asy, col: COL.y,       lw: 1.8 },
+    ],
+    nFrame,
+    [
+      { col: COL_LIGHT.x, label: 'wx' }, { col: COL_LIGHT.y, label: 'wy' },
+      { col: COL.x,       label: 'ix' }, { col: COL.y,       label: 'iy' },
+    ]);
+}
+
+// ─── Animation ────────────────────────────────────────────────────────────────
+function animate(ts) {
+  if (!animT0) animT0 = ts;
+  const elapsed = (ts - animT0) / 1000;
+  const nFrame  = Math.min(Math.floor(elapsed * FS), traj.N - 1);
+  placeIMU(wx2sx(traj.x[nFrame]), wy2sy(traj.y[nFrame]), 0);
+  drawAll(nFrame);
+
+  if (nFrame < traj.N - 1) {
+    animId = requestAnimationFrame(animate);
+  } else {
+    phase = 'ready';
+    $('btn-play').disabled = false;
+    $('btn-play').classList.add('active');
+    $('btn-play').textContent = '↺ Replay';
+    setHint('Done — press Replay to run again');
+  }
+}
+
+function startPlay() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  traj   = buildTrajectory();
+  animT0 = null;
+  phase  = 'playing';
+  $('btn-play').disabled = true;
+  $('btn-play').classList.remove('active');
+  $('btn-play').textContent = '▶ Playing…';
+  setHint('Playing…');
+  placeIMU(posStart.sx, posStart.sy, 0);
+  animId = requestAnimationFrame(animate);
 }
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
 function reset() {
-  phase = 'start'; posStart = posEnd = null;
-  hideMarker('start'); hideMarker('end');
-  defaultPose();
-  setHint('Click to set start position', false);
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  phase = 'start'; posStart = posEnd = null; traj = null;
+  ['mark-start','mark-start-inner','mark-end','mark-end-inner',
+   'path-line','g-imu','pos-start','pos-end'].forEach(hideEl);
+  $('btn-play').disabled = true;
+  $('btn-play').classList.remove('active');
+  $('btn-play').textContent = '▶ Play';
+  setHint('Click to set start position');
+  document.querySelectorAll('.plot-panel').forEach(p => {
+    const cv = p.querySelector('canvas');
+    if (cv) cv.remove();
+    const lbl = p.querySelector('.plot-label');
+    if (lbl) lbl.style.display = '';
+  });
 }
 
-function setHint(msg, warn = false) {
-  const el = $('hint-text');
-  el.textContent = msg;
-  el.className = 'hint' + (warn ? ' warn' : '');
-}
+// ─── Click interaction ────────────────────────────────────────────────────────
+const panel = $('display-panel');
 
-// ─── Cursor: crosshair inside workspace, default outside ─────────────────────
-const armSvg = $('arm-svg');
-const displayPanel = $('display-panel');
-
-function clientToSvg(clientX, clientY) {
-  const pt = armSvg.createSVGPoint();
-  pt.x = clientX; pt.y = clientY;
-  return pt.matrixTransform(armSvg.getScreenCTM().inverse());
-}
-
-displayPanel.addEventListener('mousemove', e => {
+panel.addEventListener('mousemove', e => {
   const { x, y } = clientToSvg(e.clientX, e.clientY);
-  displayPanel.style.cursor = solveIK(x, y) ? 'crosshair' : 'default';
+  panel.style.cursor = inBounds(x, y) ? 'crosshair' : 'default';
 });
-displayPanel.addEventListener('mouseleave', () => {
-  displayPanel.style.cursor = 'default';
-});
+panel.addEventListener('mouseleave', () => { panel.style.cursor = 'default'; });
 
-// ─── Click → IK → draw ────────────────────────────────────────────────────────
-displayPanel.addEventListener('click', e => {
-  if (phase === 'done') return;
-
-  const { x: svgX, y: svgY } = clientToSvg(e.clientX, e.clientY);
-
-  const sol = solveIK(svgX, svgY);
-  if (!sol) {
-    setHint('Outside reachable workspace — try a different spot', true);
-    return;
-  }
+panel.addEventListener('click', e => {
+  if (phase === 'ready' || phase === 'playing') return;
+  const { x, y } = clientToSvg(e.clientX, e.clientY);
+  if (!inBounds(x, y)) return;
+  const wx = sx2wx(x), wy = sy2wy(y);
 
   if (phase === 'start') {
-    posStart = { x: svgX, y: svgY };
-    showMarker('start', svgX, svgY);
-    drawArm(sol.t1, sol.t2);
+    posStart = { wx, wy, sx: x, sy: y };
+    placeMarker('start', x, y);
+    placeIMU(x, y, 0);
+    $('pos-start').textContent = `Start: (${wx.toFixed(2)}, ${wy.toFixed(2)}) m`;
+    showEl('pos-start');
     phase = 'end';
-    setHint('Click to set end position');
+    setHint('Now click to set end position');
 
   } else if (phase === 'end') {
-    if (Math.hypot(svgX - posStart.x, svgY - posStart.y) < MIN_SEP) {
-      setHint('Too close to start — click further away', true);
-      return;
-    }
-    posEnd = { x: svgX, y: svgY };
-    showMarker('end', svgX, svgY);
-    drawArm(sol.t1, sol.t2);
-    phase = 'done';
-    setHint('Start (green) and end (red) positions set');
+    const sep = Math.hypot(wx - posStart.wx, wy - posStart.wy);
+    if (sep < MIN_SEP) { setHint(`Too close — need ≥ ${MIN_SEP} m separation`, true); return; }
+    posEnd = { wx, wy, sx: x, sy: y };
+    placeMarker('end', x, y);
+
+    const pl = $('path-line');
+    pl.setAttribute('x1', posStart.sx); pl.setAttribute('y1', posStart.sy);
+    pl.setAttribute('x2', x);           pl.setAttribute('y2', y);
+    showEl('path-line');
+
+    placeIMU(posStart.sx, posStart.sy, 0);
+    $('pos-end').textContent = `End: (${wx.toFixed(2)}, ${wy.toFixed(2)}) m`;
+    showEl('pos-end');
+
+    $('btn-play').disabled = false;
+    $('btn-play').classList.add('active');
+    phase = 'ready';
+    setHint('Ready — press Play');
   }
 });
 
 // ─── Buttons ──────────────────────────────────────────────────────────────────
 $('btn-reset').addEventListener('click', reset);
-
-$('btn-random').addEventListener('click', () => {
-  const result = randomPositions();
-  if (!result) { setHint('Could not find two valid positions — try again', true); return; }
-  const { p1, p2 } = result;
-  posStart = p1; posEnd = p2;
-  showMarker('start', p1.x, p1.y);
-  showMarker('end',   p2.x, p2.y);
-  // Move arm to end position
-  const sol = solveIK(p2.x, p2.y);
-  if (sol) drawArm(sol.t1, sol.t2);
-  phase = 'done';
-  setHint('Start (green) and end (red) positions set');
+$('btn-play').addEventListener('click', () => {
+  if (phase === 'ready' && posStart && posEnd) startPlay();
 });
 
+// ─── Duration slider ──────────────────────────────────────────────────────────
+$('dur-slider').addEventListener('input', () => {
+  $('dur-value').textContent = parseFloat($('dur-slider').value).toFixed(1) + ' s';
+});
+
+// ─── Gravity toggle ───────────────────────────────────────────────────────────
+function updateGravity() {
+  $('btn-gravity').textContent = gravityOn ? 'Gravity: On' : 'Gravity: Off';
+  $('btn-gravity').classList.toggle('active', gravityOn);
+  $('g-gravity').setAttribute('opacity', gravityOn ? '1' : '0.2');
+}
+$('btn-gravity').addEventListener('click', () => { gravityOn = !gravityOn; updateGravity(); });
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
-buildWorkspace();
-defaultPose();
+reset();
+updateGravity();
 </script>
 </body>
 </html>

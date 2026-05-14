@@ -26,9 +26,10 @@
   .controls {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 4px; padding: 10px 20px;
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    display: flex; flex-direction: column; gap: 8px;
     margin-bottom: 8px;
   }
+  .ctrl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .ctrl-btn {
     font-family: var(--font-mono); font-size: 11px; padding: 5px 16px;
     border: 1.5px solid var(--border); border-radius: 3px;
@@ -40,25 +41,56 @@
   .ctrl-sep   { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
   .ctrl-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
   .ctrl-value { font-family: var(--font-mono); font-size: 11px; color: var(--text); min-width: 36px; }
-  input[type=range] { accent-color: var(--accent); cursor: pointer; width: 110px; }
-  .ctrl-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+  input[type=range] { accent-color: var(--accent); cursor: pointer; flex: 1; min-width: 60px; width: auto; }
+  .ctrl-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .ctrl-hint.warn { color: #b83232; }
+  .ctrl-col { display: flex; flex-direction: column; gap: 8px; }
+  .ctrl-box-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .ctrl-sliders { display: grid; grid-template-columns: max-content 1fr max-content; gap: 6px 10px; align-items: center; }
 
-  .display-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
-  .display-panel svg { display: block; width: 100%; }
-
-  .plots-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-  .plot-panel {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 4px; height: 160px;
-    display: flex; align-items: center; justify-content: center;
-  }
   .plot-label { font-family: var(--font-mono); font-size: 11px; color: var(--border); letter-spacing: .08em; text-transform: uppercase; }
+
+  .moving-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .moving-imu-panel {
+    aspect-ratio: 700 / 540;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+  }
+  .moving-imu-panel svg { display: block; width: 100%; height: 100%; }
+  .moving-readings-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    position: relative; overflow: hidden;
+  }
+
+  .sim-section { margin-bottom: 40px; }
+  .section-title { font-size: 18px; font-weight: normal; letter-spacing: -.01em; margin-bottom: 6px; }
+  .section-intro { font-size: 14px; color: var(--text-muted); font-style: italic; margin-bottom: 16px; }
+
+  .rest-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; }
+  .rest-imu-panel {
+    aspect-ratio: 1 / 1;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden;
+  }
+  .rest-imu-panel svg { display: block; width: 100%; height: 100%; }
+  .rest-readings-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    position: relative; overflow: hidden;
+  }
 
   footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   footer a { color: var(--text-muted); text-decoration: underline; }
   footer a:hover { color: var(--accent); }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true  },
+      { left: '$',  right: '$',  display: false }
+    ]
+  });"></script>
 </head>
 <body>
 <div class="page-wrapper">
@@ -73,84 +105,193 @@
 
   <hr class="divider">
 
-  <div class="controls">
-    <button class="ctrl-btn" id="btn-reset">Reset</button>
-    <button class="ctrl-btn" id="btn-play" disabled>▶ Play</button>
-    <div class="ctrl-sep"></div>
-    <span class="ctrl-label">Duration</span>
-    <input type="range" id="dur-slider" min="0.5" max="5" step="0.1" value="2">
-    <span class="ctrl-value" id="dur-value">2.0 s</span>
-    <div class="ctrl-sep"></div>
-    <button class="ctrl-btn" id="btn-gravity">Gravity: Off</button>
-    <div class="ctrl-sep"></div>
-    <span class="ctrl-hint" id="hint-text">Click to set start position</span>
+  <!-- ═══ Section 1: IMU at Rest ═══════════════════════════════════════════ -->
+  <section class="sim-section" id="sec-rest">
+    <h2 class="section-title">1. IMU at Rest</h2>
+    <p class="section-intro">What does a stationary IMU measure?</p>
+    <p>When at rest, the IMU is only sees acceleration due to gravity $\mathbf{g}$, through its local reference frame. When it's reference frame does not change orientation, the IMU outputs remain constant, equal to the components the gravity vector in its local reference frame. However, when the accelerometer is allowed to wiggle without underoing linear translation, the IMU measurements will wiggle around - the components of gravity are wiggling due to wiggling of its local reference frame.</p>
+    $$ \mathbf{a}_{imu} = \mathbf{R}^\top \mathbf{g}$$
+    The derivative of the IMU signal $\mathbf{a}_{imu}$ is given by,
+    $$ \frac{d\mathbf{a}_{imu}}{dt} = \left(\frac{d\mathbf{R}}{dt}\right)^\top \mathbf{g}$$
+    Note that for the same mount of orientation wiggling, faster wiggling with result in larger derivatives $\frac{d\mathbf{a}_{imu}}{dt}$. This issue has important implications for computing smoothness from the IMU signals using the dimensionless jerk approach.
+
+    <div class="rest-layout">
+      <div class="rest-imu-panel">
+        <svg id="rest-svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <marker id="r-g-head"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker>
+            <marker id="r-wx-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
+            <marker id="r-wy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
+            <marker id="r-ix-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
+            <marker id="r-iy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
+          </defs>
+
+          <!-- ── Gravity indicator (top-right) ───────────────────────────── -->
+          <g transform="translate(372, 36)">
+            <line x1="0" y1="0" x2="0" y2="36" stroke="#111" stroke-width="1.5" marker-end="url(#r-g-head)"/>
+            <text x="9" y="22" font-family="Helvetica,sans-serif" font-size="14" fill="#111" font-style="italic">g</text>
+          </g>
+
+          <!-- ── World frame (bottom-left) ───────────────────────────────── -->
+          <g transform="translate(42, 358)">
+            <line x1="0" y1="0" x2="32" y2="0"  stroke="#c0392b" stroke-width="1.5" marker-end="url(#r-wx-head)"/>
+            <text x="38" y="5"  font-family="Helvetica,sans-serif" font-size="12" fill="#c0392b" font-style="italic">x</text>
+            <line x1="0" y1="0" x2="0"  y2="-32" stroke="#2980b9" stroke-width="1.5" marker-end="url(#r-wy-head)"/>
+            <text x="-5" y="-37" font-family="Helvetica,sans-serif" font-size="12" fill="#2980b9" font-style="italic">y</text>
+            <circle cx="0" cy="0" r="2.5" fill="#555"/>
+            <text x="-14" y="16" font-family="Menlo,monospace" font-size="8" fill="#bbb" letter-spacing="0.04em">WORLD</text>
+          </g>
+
+          <!-- ── IMU body (centre, rotatable via JS) ─────────────────────── -->
+          <g id="rest-g-imu" transform="translate(200, 200)">
+            <rect x="-26" y="-26" width="52" height="52" rx="8" ry="8" fill="#d8d8d8" stroke="#999" stroke-width="1.5"/>
+            <text x="0" y="20" text-anchor="middle" font-family="Menlo,monospace" font-size="9" fill="#666" letter-spacing="0.06em">IMU</text>
+            <circle cx="0" cy="0" r="2" fill="#555"/>
+            <!-- local x-axis -->
+            <line x1="0" y1="0" x2="62" y2="0"  stroke="#c0392b" stroke-width="1.5" marker-end="url(#r-ix-head)"/>
+            <text x="68" y="5"  font-family="Helvetica,sans-serif" font-size="12" fill="#c0392b" font-style="italic">x</text>
+            <!-- local y-axis -->
+            <line x1="0" y1="0" x2="0"  y2="-62" stroke="#2980b9" stroke-width="1.5" marker-end="url(#r-iy-head)"/>
+            <text x="-5" y="-67" font-family="Helvetica,sans-serif" font-size="12" fill="#2980b9" font-style="italic">y</text>
+          </g>
+        </svg>
+      </div>
+      <div class="rest-readings-panel">
+        <span class="plot-label">Sensor readings</span>
+      </div>
+    </div>
+
+    <div class="controls" style="margin-top:8px;">
+      <div class="ctrl-row">
+        <button class="ctrl-btn" id="rest-btn-run">▶ Hold to Run</button>
+      </div>
+      <div class="ctrl-sliders">
+        <span class="ctrl-label">Amplitude</span>
+        <input type="range" id="rest-amp-slider" min="0" max="90" step="1" value="30">
+        <span class="ctrl-value" id="rest-amp-value">30°</span>
+        <span class="ctrl-label">Max Freq</span>
+        <input type="range" id="rest-freq-slider" min="0" max="5" step="0.25" value="1">
+        <span class="ctrl-value" id="rest-freq-value">1.00 Hz</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ═══ Section 2: Moving IMU ════════════════════════════════════════════ -->
+  <section class="sim-section" id="sec-moving">
+  <h2 class="section-title">2. IMU During Planar Motion</h2>
+  <p class="section-intro">How do IMU readings change as the sensor moves through space?</p>
+  Let's now see what happens when an IMU moves with the minimum jerk trajectory between two points. The acceleration signal in general will be,
+  $$ \mathbf{a}_{imu} = \mathbf{R}^\top \left(\frac{d^2\mathbf{x}}{dt^2} + \mathbf{g}\right)$$
+  
+  The derivative of the accelerometer data is given by,
+  
+  $$ \frac{d\mathbf{a}_{imu}}{dt} = \mathbf{R}^\top \frac{d^3\mathbf{x}}{dt^3} + \left( \frac{d\mathbf{R}}{dt}\right)^\top \frac{d^2\mathbf{x}}{dt^2} + \left(\frac{d\mathbf{R}}{dt}\right)^\top \mathbf{g}$$
+
+  <div class="moving-layout">
+    <div class="moving-imu-panel" id="display-panel">
+      <svg id="main-svg" viewBox="0 0 700 540" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="g-head"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker>
+          <marker id="wx-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
+          <marker id="wy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
+          <marker id="ix-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
+          <marker id="iy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
+        </defs>
+
+        <!-- ── Gravity indicator (top-right, outside workspace) ──────────── -->
+        <g id="g-gravity" transform="translate(668,48)">
+          <line x1="0" y1="0" x2="0" y2="32" stroke="#111" stroke-width="1.5" marker-end="url(#g-head)"/>
+          <text x="9" y="20" font-family="Helvetica,sans-serif" font-size="13" fill="#111" font-style="italic">g</text>
+        </g>
+
+        <!-- ── World frame (bottom-left, outside workspace) ──────────────── -->
+        <g transform="translate(22,496)">
+          <line x1="0" y1="0" x2="28" y2="0"  stroke="#c0392b" stroke-width="1.5" marker-end="url(#wx-head)"/>
+          <text x="34" y="4"  font-family="Helvetica,sans-serif" font-size="11" fill="#c0392b" font-style="italic">x</text>
+          <line x1="0" y1="0" x2="0"  y2="-28" stroke="#2980b9" stroke-width="1.5" marker-end="url(#wy-head)"/>
+          <text x="-4" y="-33" font-family="Helvetica,sans-serif" font-size="11" fill="#2980b9" font-style="italic">y</text>
+          <circle cx="0" cy="0" r="2.5" fill="#555"/>
+          <text x="-10" y="14" font-family="Menlo,monospace" font-size="8" fill="#bbb" letter-spacing="0.04em">WORLD</text>
+        </g>
+
+        <!-- ── Movement path ─────────────────────────────────────────────── -->
+        <line id="path-line" stroke="#bbb" stroke-width="1.5" stroke-dasharray="6,4" visibility="hidden"/>
+
+        <!-- ── Start marker ───────────────────────────────────────────────── -->
+        <circle id="mark-start"       r="8" fill="none" stroke="#2980b9" stroke-width="2" visibility="hidden"/>
+        <circle id="mark-start-inner" r="3" fill="#2980b9"                               visibility="hidden"/>
+
+        <!-- ── End marker ─────────────────────────────────────────────────── -->
+        <circle id="mark-end"       r="8" fill="none" stroke="#c0392b" stroke-width="2" visibility="hidden"/>
+        <circle id="mark-end-inner" r="3" fill="#c0392b"                               visibility="hidden"/>
+
+        <!-- ── Position labels (bottom strip) ────────────────────────────── -->
+        <text id="pos-start" x="55"  y="520" font-family="Menlo,monospace" font-size="10" fill="#2980b9" visibility="hidden"/>
+        <text id="pos-end"   x="370" y="520" font-family="Menlo,monospace" font-size="10" fill="#c0392b" visibility="hidden"/>
+
+        <!-- ── IMU body ───────────────────────────────────────────────────── -->
+        <g id="g-imu" visibility="hidden">
+          <rect x="-14" y="-14" width="28" height="28" rx="5" ry="5" fill="#d8d8d8" stroke="#999" stroke-width="1.2"/>
+          <text x="0" y="11" text-anchor="middle" font-family="Menlo,monospace" font-size="7" fill="#666" letter-spacing="0.06em">IMU</text>
+          <circle cx="0" cy="0" r="1.5" fill="#555"/>
+          <line x1="0" y1="0" x2="14" y2="0"  stroke="#c0392b" stroke-width="1.0" marker-end="url(#ix-head)"/>
+          <line x1="0" y1="0" x2="0" y2="-14" stroke="#2980b9" stroke-width="1.0" marker-end="url(#iy-head)"/>
+        </g>
+
+      </svg>
+    </div>
+    <div class="moving-readings-panel" id="moving-readings-panel">
+      <span class="plot-label">Sensor readings</span>
+    </div>
   </div>
 
-  <div class="display-panel" id="display-panel">
-    <!--
-      ViewBox: 700 × 540
-      Workspace SVG rect: x=[50,650], y=[40,460]  →  600 × 420 px
-      SCALE = 420 px/m  (y-axis = 1 m, x-axis = 600/420 ≈ 1.43 m)
-      World origin (CX,CY) = (350, 250)
-    -->
-    <svg id="main-svg" viewBox="0 0 700 540" preserveAspectRatio="xMidYMid meet" height="540">
-      <defs>
-        <marker id="g-head"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker>
-        <marker id="wx-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
-        <marker id="wy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
-        <marker id="ix-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#c0392b"/></marker>
-        <marker id="iy-head" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2980b9"/></marker>
-      </defs>
-
-
-      <!-- ── Gravity indicator (top-right, outside workspace) ──────────── -->
-      <g id="g-gravity" transform="translate(668,48)">
-        <line x1="0" y1="0" x2="0" y2="32" stroke="#111" stroke-width="1.5" marker-end="url(#g-head)"/>
-        <text x="9" y="20" font-family="Helvetica,sans-serif" font-size="13" fill="#111" font-style="italic">g</text>
-      </g>
-
-      <!-- ── World frame (bottom-left, outside workspace) ──────────────── -->
-      <g transform="translate(22,496)">
-        <line x1="0" y1="0" x2="28" y2="0"  stroke="#c0392b" stroke-width="1.5" marker-end="url(#wx-head)"/>
-        <text x="34" y="4"  font-family="Helvetica,sans-serif" font-size="11" fill="#c0392b" font-style="italic">x</text>
-        <line x1="0" y1="0" x2="0"  y2="-28" stroke="#2980b9" stroke-width="1.5" marker-end="url(#wy-head)"/>
-        <text x="-4" y="-33" font-family="Helvetica,sans-serif" font-size="11" fill="#2980b9" font-style="italic">y</text>
-        <circle cx="0" cy="0" r="2.5" fill="#555"/>
-        <text x="-10" y="14" font-family="Menlo,monospace" font-size="8" fill="#bbb" letter-spacing="0.04em">WORLD</text>
-      </g>
-
-      <!-- ── Movement path ─────────────────────────────────────────────── -->
-      <line id="path-line" stroke="#bbb" stroke-width="1.5" stroke-dasharray="6,4" visibility="hidden"/>
-
-      <!-- ── Start marker ───────────────────────────────────────────────── -->
-      <circle id="mark-start"       r="8" fill="none" stroke="#2980b9" stroke-width="2" visibility="hidden"/>
-      <circle id="mark-start-inner" r="3" fill="#2980b9"                               visibility="hidden"/>
-
-      <!-- ── End marker ─────────────────────────────────────────────────── -->
-      <circle id="mark-end"       r="8" fill="none" stroke="#c0392b" stroke-width="2" visibility="hidden"/>
-      <circle id="mark-end-inner" r="3" fill="#c0392b"                               visibility="hidden"/>
-
-      <!-- ── Position labels (bottom strip) ────────────────────────────── -->
-      <text id="pos-start" x="55"  y="520" font-family="Menlo,monospace" font-size="10" fill="#2980b9" visibility="hidden"/>
-      <text id="pos-end"   x="370" y="520" font-family="Menlo,monospace" font-size="10" fill="#c0392b" visibility="hidden"/>
-
-      <!-- ── IMU body ───────────────────────────────────────────────────── -->
-      <g id="g-imu" visibility="hidden">
-        <rect x="-17" y="-17" width="34" height="34" rx="6" ry="6" fill="#d8d8d8" stroke="#999" stroke-width="1.2"/>
-        <text x="0" y="14" text-anchor="middle" font-family="Menlo,monospace" font-size="8" fill="#666" letter-spacing="0.06em">IMU</text>
-        <circle cx="0" cy="0" r="1.5" fill="#555"/>
-        <line x1="0" y1="0" x2="16" y2="0"  stroke="#c0392b" stroke-width="1.0" marker-end="url(#ix-head)"/>
-        <line x1="0" y1="0" x2="0" y2="-16" stroke="#2980b9" stroke-width="1.0" marker-end="url(#iy-head)"/>
-      </g>
-
-    </svg>
+  <div id="ldlj-metrics" style="display:none; font-family:var(--font-mono); font-size:13px; padding:8px 20px; background:var(--surface); border:1px solid var(--border); border-radius:4px; margin-bottom:8px; gap:32px; align-items:center;">
+    <span style="color:var(--text-muted); font-size:10px; letter-spacing:.08em; text-transform:uppercase; margin-right:6px;">LDLJ-A</span>
+    <span style="color:var(--text-muted); font-size:11px;">Position:&nbsp;<span id="ldlj-a-pos-val" style="color:var(--text); font-size:15px;">—</span></span>
+    <span style="color:var(--text-muted); font-size:11px;">IMU:&nbsp;<span id="ldlj-a-imu-val" style="color:var(--text); font-size:15px;">—</span></span>
+    <span style="color:var(--text-muted); font-size:11px;">Error:&nbsp;<span id="ldlj-a-err-val" style="font-size:15px;">—</span></span>
   </div>
 
-  <div class="plots-area">
-    <div class="plot-panel"><span class="plot-label">Position · world frame</span></div>
-    <div class="plot-panel"><span class="plot-label">Velocity · world frame</span></div>
-    <div class="plot-panel"><span class="plot-label">Acceleration · world frame + IMU</span></div>
+  <div style="display:flex; gap:8px; margin-bottom:8px; align-items:stretch;">
+    <!-- ── Simulation Controls ── -->
+    <div class="controls" style="flex:1; min-width:0; margin-bottom:0;">
+      <div class="ctrl-box-title">Simulation Controls</div>
+      <div style="display:flex; flex-direction:row; gap:10px; align-items:center;">
+        <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
+          <div style="display:flex; gap:6px;">
+            <button class="ctrl-btn" id="btn-reset">Reset</button>
+            <button class="ctrl-btn" id="btn-play" disabled style="padding:5px 10px;">▶</button>
+          </div>
+          <button class="ctrl-btn" id="btn-gravity">Gravity: Off</button>
+        </div>
+        <div class="ctrl-sliders" style="flex:1; min-width:0;">
+          <span class="ctrl-label">Dur</span>
+          <input type="range" id="dur-slider" min="0.5" max="5" step="0.1" value="2">
+          <span class="ctrl-value" id="dur-value">2.0 s</span>
+          <span class="ctrl-label">Time</span>
+          <input type="range" id="time-slider" min="0" max="1" step="0.01" value="0" disabled>
+          <span class="ctrl-value" id="time-value">— s</span>
+        </div>
+      </div>
+      <span id="hint-text" class="ctrl-hint" style="display:none;"></span>
+    </div>
+    <!-- ── Orientation Controls ── -->
+    <div class="controls" style="flex:1; min-width:0; margin-bottom:0;">
+      <div class="ctrl-box-title">Orientation Controls</div>
+      <div class="ctrl-sliders">
+        <span class="ctrl-label">Angle</span>
+        <input type="range" id="angle-slider" min="0" max="180" step="1" value="0">
+        <span class="ctrl-value" id="angle-value">0°</span>
+        <span class="ctrl-label">Max Freq</span>
+        <input type="range" id="maxfreq-slider" min="0" max="5" step="0.25" value="0">
+        <span class="ctrl-value" id="maxfreq-value">0.00 Hz</span>
+      </div>
+    </div>
   </div>
+
+  </section><!-- end #sec-moving -->
 
   <footer>
     <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
@@ -186,6 +327,7 @@ let posStart = null, posEnd = null;
 let gravityOn = false;
 let animId = null, animT0 = null;
 let traj = null;
+let currentFrame = 0;
 
 // ─── SVG helpers ──────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -211,6 +353,7 @@ function setHint(msg, warn = false) {
   const el = $('hint-text');
   el.textContent = msg;
   el.className = 'ctrl-hint' + (warn ? ' warn' : '');
+  el.style.display = msg ? '' : 'none';
 }
 
 // ─── Trajectory: minimum-jerk straight-line motion ───────────────────────────
@@ -220,13 +363,34 @@ function buildTrajectory() {
   const dy = posEnd.wy - posStart.wy;
   const theta = Math.atan2(dy, dx);      // world-frame angle of motion
   const N = Math.round(T * FS) + 1;
-  const c = 1, s = 0;   // IMU stays world-aligned throughout
+  const t        = new Float64Array(N);
+  const x        = new Float64Array(N), y        = new Float64Array(N);
+  const vx       = new Float64Array(N), vy       = new Float64Array(N);
+  const ax       = new Float64Array(N), ay       = new Float64Array(N);
+  const asx      = new Float64Array(N), asy      = new Float64Array(N);
+  const imuAngle = new Float64Array(N);  // rad
 
-  const t   = new Float64Array(N);
-  const x   = new Float64Array(N), y   = new Float64Array(N);
-  const vx  = new Float64Array(N), vy  = new Float64Array(N);
-  const ax  = new Float64Array(N), ay  = new Float64Array(N);
-  const asx = new Float64Array(N), asy = new Float64Array(N);
+  const fMax  = parseFloat($('maxfreq-slider').value);
+  const angle = parseFloat($('angle-slider').value) * Math.PI / 180;
+  if (fMax <= 0) {
+    imuAngle.fill(angle);
+  } else {
+    const nFreqs = Math.max(1, Math.round(fMax / 0.25));
+    const comps = [];
+    for (let k = 0; k < nFreqs; k++)
+      comps.push({ freq: (k + 1) * 0.25, amp: Math.random(), ph: Math.random() * 2 * Math.PI });
+    for (let i = 0; i < N; i++) {
+      let v = 0;
+      for (const { freq, amp, ph } of comps)
+        v += amp * Math.sin(2 * Math.PI * freq * i * DT + ph);
+      imuAngle[i] = v;
+    }
+    // normalise to max |1|, then scale by angle slider
+    let maxAbs = 0;
+    for (let i = 0; i < N; i++) if (Math.abs(imuAngle[i]) > maxAbs) maxAbs = Math.abs(imuAngle[i]);
+    if (maxAbs > 1e-9)
+      for (let i = 0; i < N; i++) imuAngle[i] = (imuAngle[i] / maxAbs) * angle;
+  }
 
   for (let i = 0; i < N; i++) {
     const ti  = i * DT;
@@ -243,18 +407,66 @@ function buildTrajectory() {
     ax[i] = dx * sddot;
     ay[i] = dy * sddot;
 
-    // Specific force in world frame: f = a_world − g_vec, g_vec = [0, −G]
-    // → f_world = [ax, ay + G] (when gravity on), [ax, ay] (off)
-    // Rotate to sensor frame: f_s = Rᵀ · f_world
+    const c = Math.cos(imuAngle[i]), s = Math.sin(imuAngle[i]);
     const fwy = gravityOn ? ay[i] + G : ay[i];
     asx[i] =  c * ax[i] + s * fwy;
     asy[i] = -s * ax[i] + c * fwy;
   }
-  return { t, x, y, vx, vy, ax, ay, asx, asy, theta, N, T };
+  const dax  = new Float64Array(N);
+  const day  = new Float64Array(N);
+  const dasx = new Float64Array(N);
+  const dasy = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    const p = i > 0 ? i - 1 : 0, n = i < N - 1 ? i + 1 : N - 1;
+    const dt2 = (n - p) * DT;
+    dax[i]  = (ax[n]  - ax[p])  / dt2;
+    day[i]  = (ay[n]  - ay[p])  / dt2;
+    dasx[i] = (asx[n] - asx[p]) / dt2;
+    dasy[i] = (asy[n] - asy[p]) / dt2;
+  }
+
+  // ── LDLJ-V ─────────────────────────────────────────────────────────────────
+  const speed = new Float64Array(N);
+  for (let i = 0; i < N; i++) speed[i] = Math.sqrt(vx[i] ** 2 + vy[i] ** 2);
+  const vPeak = Math.max(...speed);
+  let ISJ_V = 0;
+  for (let i = 1; i < N - 1; i++) {
+    const j = (speed[i + 1] - 2 * speed[i] + speed[i - 1]) / (DT * DT);
+    ISJ_V += j * j * DT;
+  }
+  const ldlj_v = -Math.log((T ** 3 / vPeak ** 2) * ISJ_V);
+
+  // ── LDLJ-A (world-frame acceleration) ──────────────────────────────────────
+  let ISJ_A_pos = 0;
+  for (let i = 0; i < N; i++) ISJ_A_pos += (dax[i] ** 2 + day[i] ** 2) * DT;
+  let meanAx = 0, meanAy = 0;
+  for (let i = 0; i < N; i++) { meanAx += ax[i]; meanAy += ay[i]; }
+  meanAx /= N; meanAy /= N;
+  let aPeakSq_pos = 0;
+  for (let i = 0; i < N; i++) {
+    const m2 = (ax[i] - meanAx) ** 2 + (ay[i] - meanAy) ** 2;
+    if (m2 > aPeakSq_pos) aPeakSq_pos = m2;
+  }
+  const ldlj_a_pos = -Math.log((T / aPeakSq_pos) * ISJ_A_pos);
+
+  // ── LDLJ-A (IMU acceleration) ───────────────────────────────────────────────
+  let ISJ_A_imu = 0;
+  for (let i = 0; i < N; i++) ISJ_A_imu += (dasx[i] ** 2 + dasy[i] ** 2) * DT;
+  let meanAsx = 0, meanAsy = 0;
+  for (let i = 0; i < N; i++) { meanAsx += asx[i]; meanAsy += asy[i]; }
+  meanAsx /= N; meanAsy /= N;
+  let aPeakSq_imu = 0;
+  for (let i = 0; i < N; i++) {
+    const m2 = (asx[i] - meanAsx) ** 2 + (asy[i] - meanAsy) ** 2;
+    if (m2 > aPeakSq_imu) aPeakSq_imu = m2;
+  }
+  const ldlj_a_imu = -Math.log((T / aPeakSq_imu) * ISJ_A_imu);
+
+  return { t, x, y, vx, vy, ax, ay, dax, day, asx, asy, dasx, dasy,
+           imuAngle, theta, N, T, ldlj_v, ldlj_a_pos, ldlj_a_imu };
 }
 
 // ─── Canvas plots ─────────────────────────────────────────────────────────────
-const PAD = { t: 8, r: 12, b: 28, l: 44 };
 const COL       = { x: '#c0392b', y: '#2980b9' };
 const COL_LIGHT = { x: '#e8a8a0', y: '#a0c4e8' };
 
@@ -270,140 +482,153 @@ function fmtY(v, step) {
   return v.toFixed(d);
 }
 
-function getCanvas(panel) {
+function drawMovingPlot(nFrame) {
+  const panel = $('moving-readings-panel');
   let cv = panel.querySelector('canvas');
   if (!cv) {
     const lbl = panel.querySelector('.plot-label');
     if (lbl) lbl.style.display = 'none';
     cv = document.createElement('canvas');
-    Object.assign(cv.style, { display: 'block', width: '100%', height: '100%' });
+    cv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
     panel.appendChild(cv);
   }
-  const dpr = window.devicePixelRatio || 1;
-  const r   = panel.getBoundingClientRect();
-  cv.width  = Math.round(r.width  * dpr);
-  cv.height = Math.round(r.height * dpr);
+  const dpr  = window.devicePixelRatio || 1;
+  const rect = panel.getBoundingClientRect();
+  cv.width  = Math.round(rect.width  * dpr);
+  cv.height = Math.round(rect.height * dpr);
   const ctx = cv.getContext('2d');
   ctx.scale(dpr, dpr);
-  return { ctx, w: r.width, h: r.height };
-}
-
-function drawPanel(panel, title, series, nFrame, legend) {
-  const { ctx, w, h } = getCanvas(panel);
-  const { t: pT, r: pR, b: pB, l: pL } = PAD;
-  const pw = w - pL - pR, ph = h - pT - pB;
+  const w = rect.width, h = rect.height;
 
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, w, h);
 
-  // y range across all series
-  let yMin = Infinity, yMax = -Infinity;
-  for (const { arr } of series) {
-    for (const v of arr) { if (v < yMin) yMin = v; if (v > yMax) yMax = v; }
-  }
-  const span = yMax - yMin;
-  if (span < 1e-6) { yMin -= 0.5; yMax += 0.5; }
-  else             { yMin -= span * 0.12; yMax += span * 0.12; }
+  if (!traj) return;
 
-  const tx = t => pL + (t / traj.T) * pw;
-  const vy = v => pT + ph * (1 - (v - yMin) / (yMax - yMin));
+  const PL = 44, PR = 12, GAP = 8;
+  const subH = (h - GAP) / 2;
 
-  // y-axis tick labels only (no grid)
-  const yStep = niceStep(yMax - yMin, 4);
-  ctx.font = '9px Menlo,monospace';
-  for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + yStep * 0.01; v += yStep) {
-    const py = vy(v);
-    if (py < pT - 1 || py > pT + ph + 1) continue;
-    ctx.fillStyle = '#bbb'; ctx.textAlign = 'right';
-    ctx.fillText(fmtY(v, yStep), pL - 4, py + 3.5);
-  }
+  // series: [{ data, col, lw?, label? }]
+  function drawSub(offsetY, panelH, series, title, showXAxis) {
+    const PT = 14, PB = showXAxis ? 28 : 6;
+    const pw = w - PL - PR, ph = panelH - PT - PB;
+    if (ph <= 4) return;
 
-  // subtle zero line
-  if (yMin < 0 && yMax > 0) {
-    ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.moveTo(pL, vy(0)); ctx.lineTo(pL + pw, vy(0)); ctx.stroke();
-  }
-
-  // x-axis baseline + ticks + labels
-  ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
-  ctx.beginPath(); ctx.moveTo(pL, pT + ph); ctx.lineTo(pL + pw, pT + ph); ctx.stroke();
-  const tStep = niceStep(traj.T, 5);
-  ctx.font = '9px Menlo,monospace';
-  for (let tv = 0; tv <= traj.T + tStep * 0.01; tv += tStep) {
-    const px = tx(tv);
-    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
-    ctx.beginPath(); ctx.moveTo(px, pT + ph); ctx.lineTo(px, pT + ph + 3); ctx.stroke();
-    ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
-    ctx.fillText(tv.toFixed(1), px, pT + ph + 14);
-  }
-  ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
-  ctx.fillText('t (s)', pL + pw / 2, pT + ph + 26);
-
-  // data lines up to nFrame
-  const n = Math.min(nFrame + 1, traj.N);
-  for (const { arr, col, lw } of series) {
-    ctx.strokeStyle = col; ctx.lineWidth = lw || 1.4;
-    ctx.lineJoin = 'round'; ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      i === 0 ? ctx.moveTo(tx(traj.t[i]), vy(arr[i]))
-              : ctx.lineTo(tx(traj.t[i]), vy(arr[i]));
+    let yMin = Infinity, yMax = -Infinity;
+    const n = Math.min(nFrame + 1, traj.N);
+    for (const { data } of series) {
+      for (let i = 0; i < n; i++) {
+        if (data[i] < yMin) yMin = data[i];
+        if (data[i] > yMax) yMax = data[i];
+      }
     }
-    ctx.stroke();
-  }
+    if (!isFinite(yMin)) return;
+    const span = yMax - yMin;
+    if (span < 1e-6) { yMin -= 1; yMax += 1; }
+    else { yMin -= span * 0.15; yMax += span * 0.15; }
 
-  // time cursor
-  if (nFrame < traj.N - 1) {
-    const cx = tx(traj.t[nFrame]);
-    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(cx, pT); ctx.lineTo(cx, pT + ph); ctx.stroke();
-    ctx.setLineDash([]);
-  }
+    const mapT = t => PL + (t / traj.T) * pw;
+    const mapV = v => offsetY + PT + ph * (1 - (v - yMin) / (yMax - yMin));
+    const yStep = niceStep(yMax - yMin, 4);
 
-  // title (top-left)
-  ctx.fillStyle = '#aaa'; ctx.font = '9px Menlo,monospace'; ctx.textAlign = 'left';
-  ctx.fillText(title, pL + 3, pT + 11);
+    if (yMin < 0 && yMax > 0) {
+      ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(PL, mapV(0)); ctx.lineTo(PL + pw, mapV(0)); ctx.stroke();
+    }
 
-  // legend (top-right, right-to-left)
-  if (legend && legend.length) {
+    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(PL, offsetY + PT + ph); ctx.lineTo(PL + pw, offsetY + PT + ph); ctx.stroke();
+
+    ctx.font = '9px Menlo,monospace';
+    for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + yStep * 0.01; v += yStep) {
+      const py = mapV(v);
+      if (py < offsetY + PT - 1 || py > offsetY + PT + ph + 1) continue;
+      ctx.fillStyle = '#bbb'; ctx.textAlign = 'right';
+      ctx.fillText(fmtY(v, yStep), PL - 4, py + 3.5);
+    }
+
+    if (showXAxis) {
+      const tStep = niceStep(traj.T, 5);
+      for (let tv = 0; tv <= traj.T + tStep * 0.01; tv += tStep) {
+        const px = mapT(tv);
+        ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(px, offsetY + PT + ph); ctx.lineTo(px, offsetY + PT + ph + 3); ctx.stroke();
+        ctx.fillStyle = '#bbb'; ctx.textAlign = 'center'; ctx.font = '9px Menlo,monospace';
+        ctx.fillText(tv.toFixed(1), px, offsetY + PT + ph + 14);
+      }
+      ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
+      ctx.fillText('t (s)', PL + pw / 2, offsetY + PT + ph + 26);
+    }
+
+    for (const { data, col, lw } of series) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw || 1.4; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const px = mapT(traj.t[i]), py = mapV(data[i]);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    if (nFrame < traj.N - 1) {
+      const cx = mapT(traj.t[nFrame]);
+      ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(cx, offsetY + PT); ctx.lineTo(cx, offsetY + PT + ph); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     ctx.font = '8px Menlo,monospace';
-    let lx = pL + pw - 2;
-    for (let i = legend.length - 1; i >= 0; i--) {
-      const { col, label } = legend[i];
+    const dotX = mapT(traj.t[nFrame]);
+    const rightHalf = dotX > PL + pw * 0.6;
+    for (const { data, col } of series) {
+      const dotY = mapV(data[nFrame]);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(dotX, dotY, 3, 0, 2 * Math.PI); ctx.fill();
+      ctx.textAlign = rightHalf ? 'right' : 'left';
+      ctx.fillText(fmtY(data[nFrame], yStep), dotX + (rightHalf ? -6 : 6),
+        Math.max(offsetY + PT + 8, Math.min(offsetY + PT + ph - 2, dotY - 5)));
+    }
+
+    ctx.fillStyle = '#aaa'; ctx.font = '9px Menlo,monospace'; ctx.textAlign = 'left';
+    ctx.fillText(title, PL + 3, offsetY + PT + 10);
+
+    ctx.font = '8px Menlo,monospace';
+    let lx = PL + pw - 2;
+    for (const { col, label } of [...series].reverse()) {
+      if (!label) continue;
       ctx.fillStyle = col; ctx.textAlign = 'right';
       const tw = ctx.measureText(label).width;
-      ctx.fillText(label, lx, pT + 11);
-      lx -= tw + 4;
-      ctx.fillRect(lx - 8, pT + 6, 8, 2.5);
-      lx -= 13;
+      ctx.fillText(label, lx, offsetY + PT + 10); lx -= tw + 4;
+      ctx.fillRect(lx - 8, offsetY + PT + 5, 8, 2.5); lx -= 13;
     }
   }
+
+  drawSub(0, subH, [
+    { data: traj.ax,  col: COL_LIGHT.x, lw: 1.2, label: 'wx' },
+    { data: traj.ay,  col: COL_LIGHT.y, lw: 1.2, label: 'wy' },
+    { data: traj.asx, col: COL.x,       lw: 1.6, label: 'ix' },
+    { data: traj.asy, col: COL.y,       lw: 1.6, label: 'iy' },
+  ], 'acceleration  [m/s²]', false);
+
+  drawSub(subH + GAP, subH, [
+    { data: traj.dasx, col: COL.x, label: 'x' },
+    { data: traj.dasy, col: COL.y, label: 'y' },
+  ], 'd/dt acceleration  [m/s³]', true);
 }
 
-function drawAll(nFrame) {
-  const panels = document.querySelectorAll('.plot-panel');
-  const xyLegend = [{ col: COL.x, label: 'x' }, { col: COL.y, label: 'y' }];
-
-  drawPanel(panels[0], 'position  [m]',
-    [{ arr: traj.x, col: COL.x }, { arr: traj.y, col: COL.y }],
-    nFrame, xyLegend);
-
-  drawPanel(panels[1], 'velocity  [m/s]',
-    [{ arr: traj.vx, col: COL.x }, { arr: traj.vy, col: COL.y }],
-    nFrame, xyLegend);
-
-  drawPanel(panels[2], 'acceleration  [m/s²]',
-    [
-      { arr: traj.ax,  col: COL_LIGHT.x, lw: 1.2 },
-      { arr: traj.ay,  col: COL_LIGHT.y, lw: 1.2 },
-      { arr: traj.asx, col: COL.x,       lw: 1.8 },
-      { arr: traj.asy, col: COL.y,       lw: 1.8 },
-    ],
-    nFrame,
-    [
-      { col: COL_LIGHT.x, label: 'wx' }, { col: COL_LIGHT.y, label: 'wy' },
-      { col: COL.x,       label: 'ix' }, { col: COL.y,       label: 'iy' },
-    ]);
+// ─── LDLJ display ────────────────────────────────────────────────────────────
+function updateLDLJDisplay() {
+  const el = $('ldlj-metrics');
+  if (!traj) { el.style.display = 'none'; return; }
+  const pos = traj.ldlj_a_pos, imu = traj.ldlj_a_imu;
+  const errPct = (imu - pos) / Math.abs(pos) * 100;
+  $('ldlj-a-pos-val').textContent = pos.toFixed(3);
+  $('ldlj-a-imu-val').textContent = imu.toFixed(3);
+  const errEl = $('ldlj-a-err-val');
+  errEl.textContent = (errPct >= 0 ? '+' : '') + errPct.toFixed(1) + '%';
+  errEl.style.color = Math.abs(errPct) < 5 ? '#2e7d32' : Math.abs(errPct) < 15 ? '#e65100' : '#b83232';
+  el.style.display = 'flex';
 }
 
 // ─── Animation ────────────────────────────────────────────────────────────────
@@ -411,8 +636,11 @@ function animate(ts) {
   if (!animT0) animT0 = ts;
   const elapsed = (ts - animT0) / 1000;
   const nFrame  = Math.min(Math.floor(elapsed * FS), traj.N - 1);
-  placeIMU(wx2sx(traj.x[nFrame]), wy2sy(traj.y[nFrame]), 0);
-  drawAll(nFrame);
+  currentFrame = nFrame;
+  placeIMU(wx2sx(traj.x[nFrame]), wy2sy(traj.y[nFrame]), traj.imuAngle[nFrame] * 180 / Math.PI);
+  $('time-slider').value = traj.t[nFrame];
+  $('time-value').textContent = traj.t[nFrame].toFixed(2) + ' s';
+  drawMovingPlot(nFrame);
 
   if (nFrame < traj.N - 1) {
     animId = requestAnimationFrame(animate);
@@ -420,8 +648,8 @@ function animate(ts) {
     phase = 'ready';
     $('btn-play').disabled = false;
     $('btn-play').classList.add('active');
-    $('btn-play').textContent = '↺ Replay';
-    setHint('Done — press Replay to run again');
+    $('btn-play').textContent = '↺';
+    setHint('Done — scrub the time slider or press ↺');
   }
 }
 
@@ -432,28 +660,39 @@ function startPlay() {
   phase  = 'playing';
   $('btn-play').disabled = true;
   $('btn-play').classList.remove('active');
-  $('btn-play').textContent = '▶ Playing…';
+  $('btn-play').textContent = '▶';
+  $('time-slider').max   = traj.T;
+  $('time-slider').step  = DT;
+  $('time-slider').value = 0;
+  $('time-slider').disabled = false;
+  $('time-value').textContent = '0.00 s';
   setHint('Playing…');
-  placeIMU(posStart.sx, posStart.sy, 0);
+  updateLDLJDisplay();
+  placeIMU(posStart.sx, posStart.sy, traj.imuAngle[0] * 180 / Math.PI);
   animId = requestAnimationFrame(animate);
 }
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
 function reset() {
   if (animId) { cancelAnimationFrame(animId); animId = null; }
-  phase = 'start'; posStart = posEnd = null; traj = null;
+  phase = 'start'; posStart = posEnd = null; traj = null; currentFrame = 0;
   ['mark-start','mark-start-inner','mark-end','mark-end-inner',
    'path-line','g-imu','pos-start','pos-end'].forEach(hideEl);
   $('btn-play').disabled = true;
   $('btn-play').classList.remove('active');
-  $('btn-play').textContent = '▶ Play';
-  setHint('Click to set start position');
-  document.querySelectorAll('.plot-panel').forEach(p => {
-    const cv = p.querySelector('canvas');
+  $('btn-play').textContent = '▶';
+  $('time-slider').disabled = true;
+  $('time-slider').value = 0;
+  $('time-value').textContent = '— s';
+  setHint('');
+  $('ldlj-metrics').style.display = 'none';
+  const mrp = $('moving-readings-panel');
+  if (mrp) {
+    const cv = mrp.querySelector('canvas');
     if (cv) cv.remove();
-    const lbl = p.querySelector('.plot-label');
+    const lbl = mrp.querySelector('.plot-label');
     if (lbl) lbl.style.display = '';
-  });
+  }
 }
 
 // ─── Click interaction ────────────────────────────────────────────────────────
@@ -513,6 +752,49 @@ $('dur-slider').addEventListener('input', () => {
   $('dur-value').textContent = parseFloat($('dur-slider').value).toFixed(1) + ' s';
 });
 
+// ─── Rest-section sliders ─────────────────────────────────────────────────────
+$('rest-amp-slider').addEventListener('input', () => {
+  $('rest-amp-value').textContent = $('rest-amp-slider').value + '°';
+});
+$('rest-freq-slider').addEventListener('input', () => {
+  $('rest-freq-value').textContent = parseFloat($('rest-freq-slider').value).toFixed(2) + ' Hz';
+});
+
+// ─── Time scrubber ────────────────────────────────────────────────────────────
+$('time-slider').addEventListener('input', () => {
+  if (!traj) return;
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  if (phase === 'playing') {
+    phase = 'ready';
+    $('btn-play').disabled = false;
+    $('btn-play').classList.add('active');
+    $('btn-play').textContent = '↺';
+  }
+  const nFrame = Math.min(Math.round(parseFloat($('time-slider').value) / DT), traj.N - 1);
+  currentFrame = nFrame;
+  $('time-value').textContent = traj.t[nFrame].toFixed(2) + ' s';
+  placeIMU(wx2sx(traj.x[nFrame]), wy2sy(traj.y[nFrame]), traj.imuAngle[nFrame] * 180 / Math.PI);
+  drawMovingPlot(nFrame);
+});
+
+// ─── Orientation controls ─────────────────────────────────────────────────────
+$('angle-slider').addEventListener('input', () => {
+  const deg = parseFloat($('angle-slider').value);
+  $('angle-value').textContent = deg + '°';
+  if (traj && phase === 'ready') {
+    traj = buildTrajectory();
+    updateLDLJDisplay();
+    placeIMU(wx2sx(traj.x[currentFrame]), wy2sy(traj.y[currentFrame]),
+             traj.imuAngle[currentFrame] * 180 / Math.PI);
+    drawMovingPlot(currentFrame);
+  } else if (posStart) {
+    placeIMU(posStart.sx, posStart.sy, deg);
+  }
+});
+$('maxfreq-slider').addEventListener('input', () => {
+  $('maxfreq-value').textContent = parseFloat($('maxfreq-slider').value).toFixed(2) + ' Hz';
+});
+
 // ─── Gravity toggle ───────────────────────────────────────────────────────────
 function updateGravity() {
   $('btn-gravity').textContent = gravityOn ? 'Gravity: On' : 'Gravity: Off';
@@ -521,9 +803,224 @@ function updateGravity() {
 }
 $('btn-gravity').addEventListener('click', () => { gravityOn = !gravityOn; updateGravity(); });
 
+// ─── Section 1: IMU at Rest ───────────────────────────────────────────────────
+let restAnimId = null, restT0 = null, restPolysine = null;
+const REST_WIN = 5;  // seconds of rolling history shown
+
+function buildRestPolysine() {
+  const fMax   = parseFloat($('rest-freq-slider').value);
+  const nFreqs = fMax <= 0 ? 0 : Math.max(1, Math.round(fMax / 0.25));
+  const maxAmp = parseFloat($('rest-amp-slider').value) / nFreqs * Math.PI / 180;
+  const freqs = [], amps = [], phases = [];
+  for (let k = 0; k < nFreqs; k++) {
+    freqs.push((k + 1) * 0.25);
+    amps.push(Math.random() * maxAmp);
+    phases.push(Math.random() * 2 * Math.PI);
+  }
+  return { freqs, amps, phases, t: [], asx: [], asy: [], dasx: [], dasy: [] };
+}
+
+function restOriAngle(t) {
+  let a = 0;
+  const { freqs, amps, phases } = restPolysine;
+  for (let k = 0; k < freqs.length; k++)
+    a += amps[k] * Math.sin(2 * Math.PI * freqs[k] * t + phases[k]);
+  return a;
+}
+
+function restOriAngleDot(t) {
+  let adot = 0;
+  const { freqs, amps, phases } = restPolysine;
+  for (let k = 0; k < freqs.length; k++)
+    adot += amps[k] * 2 * Math.PI * freqs[k] * Math.cos(2 * Math.PI * freqs[k] * t + phases[k]);
+  return adot;
+}
+
+function drawRestPlot() {
+  const panel = document.querySelector('.rest-readings-panel');
+  let cv = panel.querySelector('canvas');
+  if (!cv) {
+    const lbl = panel.querySelector('.plot-label');
+    if (lbl) lbl.style.display = 'none';
+    cv = document.createElement('canvas');
+    cv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
+    panel.appendChild(cv);
+  }
+  const dpr  = window.devicePixelRatio || 1;
+  const rect = panel.getBoundingClientRect();
+  cv.width  = Math.round(rect.width  * dpr);
+  cv.height = Math.round(rect.height * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+
+  const { t: ts, asx, asy, dasx, dasy } = restPolysine;
+  if (ts.length < 2) return;
+
+  const tNow = ts[ts.length - 1];
+  const tMin = Math.max(0, tNow - REST_WIN);
+  const PL = 44, PR = 12, GAP = 8;
+  const subH = (h - GAP) / 2;
+
+  function drawSub(offsetY, panelH, d1, d2, title, showXAxis) {
+    const PT = 14, PB = showXAxis ? 28 : 6;
+    const pw = w - PL - PR, ph = panelH - PT - PB;
+    if (ph <= 4) return;
+
+    // y range from visible data
+    let yMin = Infinity, yMax = -Infinity;
+    for (let i = 0; i < ts.length; i++) {
+      if (ts[i] < tMin - 0.01) continue;
+      if (d1[i] < yMin) yMin = d1[i]; if (d1[i] > yMax) yMax = d1[i];
+      if (d2[i] < yMin) yMin = d2[i]; if (d2[i] > yMax) yMax = d2[i];
+    }
+    if (!isFinite(yMin)) return;
+    const span = yMax - yMin;
+    if (span < 1e-6) { yMin -= 1; yMax += 1; }
+    else { yMin -= span * 0.15; yMax += span * 0.15; }
+
+    const mapT = t => PL + (t - tMin) / REST_WIN * pw;
+    const mapV = v => offsetY + PT + ph * (1 - (v - yMin) / (yMax - yMin));
+    const yStep = niceStep(yMax - yMin, 4);
+
+    // zero line
+    if (yMin < 0 && yMax > 0) {
+      ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(PL, mapV(0)); ctx.lineTo(PL + pw, mapV(0)); ctx.stroke();
+    }
+
+    // x-axis baseline
+    ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(PL, offsetY + PT + ph); ctx.lineTo(PL + pw, offsetY + PT + ph); ctx.stroke();
+
+    // y-axis tick labels
+    ctx.font = '9px Menlo,monospace';
+    for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + yStep * 0.01; v += yStep) {
+      const py = mapV(v);
+      if (py < offsetY + PT - 1 || py > offsetY + PT + ph + 1) continue;
+      ctx.fillStyle = '#bbb'; ctx.textAlign = 'right';
+      ctx.fillText(fmtY(v, yStep), PL - 4, py + 3.5);
+    }
+
+    // x-axis ticks + labels (bottom panel only)
+    if (showXAxis) {
+      ctx.font = '9px Menlo,monospace';
+      for (let tv = Math.ceil(tMin); tv <= tNow + 0.01; tv++) {
+        const px = mapT(tv);
+        if (px < PL - 1 || px > PL + pw + 1) continue;
+        ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(px, offsetY + PT + ph); ctx.lineTo(px, offsetY + PT + ph + 3); ctx.stroke();
+        ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
+        ctx.fillText(tv.toFixed(0) + 's', px, offsetY + PT + ph + 14);
+      }
+      ctx.fillStyle = '#bbb'; ctx.textAlign = 'center';
+      ctx.fillText('t (s)', PL + pw / 2, offsetY + PT + ph + 26);
+    }
+
+    // data lines
+    for (const [data, col] of [[d1, COL.x], [d2, COL.y]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      let first = true;
+      for (let i = 0; i < ts.length; i++) {
+        if (ts[i] < tMin - 0.01) continue;
+        const px = mapT(ts[i]), py = mapV(data[i]);
+        first ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        first = false;
+      }
+      ctx.stroke();
+    }
+
+    // current-value dots + labels
+    ctx.font = '8px Menlo,monospace';
+    for (const [data, col] of [[d1, COL.x], [d2, COL.y]]) {
+      const px = mapT(tNow), py = mapV(data[data.length - 1]);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, 2 * Math.PI); ctx.fill();
+      ctx.textAlign = 'right';
+      ctx.fillText(fmtY(data[data.length - 1], yStep), px - 6, py - 4);
+    }
+
+    // title (top-left)
+    ctx.fillStyle = '#aaa'; ctx.font = '9px Menlo,monospace'; ctx.textAlign = 'left';
+    ctx.fillText(title, PL + 3, offsetY + PT + 10);
+
+    // legend (top-right)
+    ctx.font = '8px Menlo,monospace';
+    let lx = PL + pw - 2;
+    for (const [col, lbl] of [[COL.y, 'y'], [COL.x, 'x']]) {
+      ctx.fillStyle = col; ctx.textAlign = 'right';
+      const tw = ctx.measureText(lbl).width;
+      ctx.fillText(lbl, lx, offsetY + PT + 10); lx -= tw + 4;
+      ctx.fillRect(lx - 8, offsetY + PT + 5, 8, 2.5); lx -= 13;
+    }
+  }
+
+  drawSub(0,          subH, asx,  asy,  'acceleration  [m/s²]',       false);
+  drawSub(subH + GAP, subH, dasx, dasy, 'd/dt acceleration  [m/s³]',  true);
+}
+
+function restAnimate(ts_raw) {
+  if (!restT0) restT0 = ts_raw;
+  const t = (ts_raw - restT0) / 1000;
+
+  const angle = restOriAngle(t);
+  $('rest-g-imu').setAttribute('transform',
+    `translate(200,200) rotate(${((-angle) * 180 / Math.PI).toFixed(2)})`);
+
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const thetaDot = restOriAngleDot(t);
+  restPolysine.t.push(t);
+  restPolysine.asx.push(s * G);
+  restPolysine.asy.push(c * G);
+  restPolysine.dasx.push( G * c * thetaDot);
+  restPolysine.dasy.push(-G * s * thetaDot);
+
+  const cutoff = t - REST_WIN - 0.5;
+  while (restPolysine.t.length > 1 && restPolysine.t[0] < cutoff) {
+    restPolysine.t.shift();  restPolysine.asx.shift();  restPolysine.asy.shift();
+    restPolysine.dasx.shift(); restPolysine.dasy.shift();
+  }
+
+  drawRestPlot();
+  restAnimId = requestAnimationFrame(restAnimate);
+}
+
+function startRest() {
+  if (restAnimId) { cancelAnimationFrame(restAnimId); restAnimId = null; }
+  restT0 = null;
+  restPolysine = buildRestPolysine();
+  $('rest-btn-run').textContent = '● Running…';
+  $('rest-btn-run').classList.add('active');
+  restAnimId = requestAnimationFrame(restAnimate);
+}
+
+function stopRest() {
+  if (restAnimId) { cancelAnimationFrame(restAnimId); restAnimId = null; }
+  $('rest-btn-run').textContent = '▶ Hold to Run';
+  $('rest-btn-run').classList.remove('active');
+}
+
+const restBtn = $('rest-btn-run');
+restBtn.addEventListener('mousedown',   e => { e.preventDefault(); startRest(); });
+restBtn.addEventListener('mouseup',     () => stopRest());
+restBtn.addEventListener('mouseleave',  () => { if (restAnimId) stopRest(); });
+restBtn.addEventListener('touchstart',  e => { e.preventDefault(); startRest(); }, { passive: false });
+restBtn.addEventListener('touchend',    () => stopRest());
+restBtn.addEventListener('touchcancel', () => stopRest());
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 reset();
 updateGravity();
+
+// Lock button widths at their initial (widest) rendered size
+['btn-reset', 'btn-play', 'btn-gravity', 'rest-btn-run'].forEach(id => {
+  const b = $(id);
+  b.style.minWidth = b.offsetWidth + 'px';
+});
 </script>
 </body>
 </html>

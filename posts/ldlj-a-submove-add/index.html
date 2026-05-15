@@ -52,6 +52,11 @@
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-swatch { width: 24px; height: 2px; display: inline-block; }
 
+  /* ── Toggle buttons ──────────────────────────────────────────────────── */
+  .toggle-btn { font-family: var(--font-mono); font-size: 11px; padding: 4px 18px; border: 1.5px solid var(--border); border-radius: 3px; background: var(--surface); color: var(--text-muted); cursor: pointer; letter-spacing: .06em; text-transform: uppercase; transition: all .15s; }
+  .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toggle-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+
   /* ── 2-column measure grid ────────────────────────────────────────────── */
   .measure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
   @media (max-width: 560px) { .measure-grid { grid-template-columns: 1fr; } }
@@ -124,6 +129,13 @@
       <input type="range" id="isi-slider" min="0.00" max="2.00" step="0.001" value="1.00">
       <span class="slider-value" id="isi-val">1.00</span>
     </div>
+    <div class="slider-row">
+      <span class="slider-label">Submovement type</span>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-mjt"   class="toggle-btn active">MJT</button>
+        <button id="btn-gauss" class="toggle-btn">Gaussian</button>
+      </div>
+    </div>
   </div>
 
   <!-- ── Measure-vs-ISI plots ───────────────────────────────────────────── -->
@@ -148,7 +160,7 @@
 </div>
 <script type="module">
 import { linspace, initChartGroup, mkAxis, styleAxis, getInnerWidth } from '../../assets/sparc-core.js?v=3';
-import { mjtVelocity } from '../../assets/ldlj-core.js';
+import { mjtVelocity, gaussianVelocity } from '../../assets/ldlj-core.js';
 
 // ---------------------------------------------------------------------------
 // Parameters
@@ -173,9 +185,19 @@ function centralDiff(arr, dt) {
   return d;
 }
 
+let subType = 'mjt';  // 'mjt' | 'gaussian'
+
+const GAUSS_SIGMA = T_SUB / 6;  // ±3σ ≈ ±T_SUB/2
+
+function subVelocity(t, t_start) {
+  if (subType === 'gaussian')
+    return gaussianVelocity(t, t_start + T_SUB / 2, GAUSS_SIGMA, 1.0);
+  return mjtVelocity(t, t_start, T_SUB, 1.0);
+}
+
 function buildSignals(isi) {
-  const v1  = mjtVelocity(t_base, 0,   T_SUB, 1.0);
-  const v2  = mjtVelocity(t_base, isi, T_SUB, 1.0);
+  const v1  = subVelocity(t_base, 0);
+  const v2  = subVelocity(t_base, isi);
   const vc  = t_base.map((_, i) => v1[i] + v2[i]);
 
   const a1  = centralDiff(v1, DT);
@@ -235,13 +257,21 @@ function computeLDLJ_A(ac, i0, i1, T) {
 const ISI_MIN = 0.00, ISI_MAX = 2.00, ISI_N = 200;
 const isiVals = linspace(ISI_MIN, ISI_MAX, ISI_N);
 
-const curveData = isiVals.map(isi => {
-  const { vc, ac, i0, i1, T } = buildSignals(isi);
-  return {
-    ldlj_v: computeLDLJ_V(vc, i0, i1, T),
-    ldlj_a: computeLDLJ_A(ac, i0, i1, T),
-  };
-});
+function computeCurves() {
+  return isiVals.map(isi => {
+    const { vc, ac, i0, i1, T } = buildSignals(isi);
+    return {
+      ldlj_v: computeLDLJ_V(vc, i0, i1, T),
+      ldlj_a: computeLDLJ_A(ac, i0, i1, T),
+    };
+  });
+}
+
+subType = 'mjt';      const curveMJT  = computeCurves();
+subType = 'gaussian'; const curveGauss = computeCurves();
+subType = 'mjt';  // reset to default
+
+function activeCurves() { return subType === 'gaussian' ? curveGauss : curveMJT; }
 
 // ---------------------------------------------------------------------------
 // D3 chart setup — speed profile
@@ -321,12 +351,13 @@ function render() {
   pathACom.attr('d', d3.line().x((_, i) => xA(t_base[i])).y(d => yA(d))(ac));
 
   // ── LDLJ-V chart ──────────────────────────────────────────────────────
+  const curves = activeCurves();
   const curV = computeLDLJ_V(vc, 0, i1, T);
-  updateMarkerChart(chartLDLJ_V, 'chart-ldlj-v', curveData.map(d => d.ldlj_v), isi, curV);
+  updateMarkerChart(chartLDLJ_V, 'chart-ldlj-v', curves.map(d => d.ldlj_v), isi, curV);
 
   // ── LDLJ-A chart ──────────────────────────────────────────────────────
   const curA = computeLDLJ_A(ac, 0, i1, T);
-  updateMarkerChart(chartLDLJ_A, 'chart-ldlj-a', curveData.map(d => d.ldlj_a), isi, curA);
+  updateMarkerChart(chartLDLJ_A, 'chart-ldlj-a', curves.map(d => d.ldlj_a), isi, curA);
 }
 
 function updateMarkerChart(ch, svgId, vals, isi, curVal) {
@@ -356,6 +387,20 @@ function updateMarkerChart(ch, svgId, vals, isi, curVal) {
 // ---------------------------------------------------------------------------
 document.getElementById('isi-slider').addEventListener('input', render);
 window.addEventListener('resize', render);
+
+document.getElementById('btn-mjt').addEventListener('click', () => {
+  subType = 'mjt';
+  document.getElementById('btn-mjt').classList.add('active');
+  document.getElementById('btn-gauss').classList.remove('active');
+  render();
+});
+document.getElementById('btn-gauss').addEventListener('click', () => {
+  subType = 'gaussian';
+  document.getElementById('btn-gauss').classList.add('active');
+  document.getElementById('btn-mjt').classList.remove('active');
+  render();
+});
+
 requestAnimationFrame(render);
 </script>
 </body>

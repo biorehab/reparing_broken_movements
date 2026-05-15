@@ -293,6 +293,21 @@
 
   </section><!-- end #sec-moving -->
 
+  <hr class="divider">
+
+  <!-- ═══ Section 3: What to Notice ══════════════════════════════════════════ -->
+  <section class="sim-section" id="sec-notice">
+    <h2 class="section-title">3. What to Notice</h2>
+    The <a href="https://biorehab.github.io/reparing_broken_movements/posts/ldlj-a-submove-add/">LDLJ-A measure</a> is a way of computing jerk-bas  ed smoothness of a movement directly from the acceleration data. From the simulations in Sections 1 and 2, we can notice the following:
+    <ul style="font-size:15px; color:#2a2a2a; padding-left:1.4em; line-height:1.9;">
+      <li>LDLJ-A (pos) remains unchanged regardless of orientation, because it is computed from the world-frame kinematics.</li>
+      <li>Wiggling of the accelerometer when its at test can result in wiggling of its output due to gravity.</li>
+      <li>Rotating the IMU by a fixed angle (Max Freq = 0) still leaves LDLJ-A (IMU) equal to LDLJ-A (pos) — a constant rotation is a rigid-body transform and does not add jerk.</li>
+      <li>Turning <strong>gravity on</strong> introduces a bias in the IMU signal. Mean-subtraction removes it fully when the rotatation is fixed, only partially when the IMU rotates.</li>
+      <li>Adding <strong>orientation wiggling</strong> (Max Freq &gt; 0) corrupts the IMU acceleration with rotation-induced artefacts, causing LDLJ-A (IMU) to diverge from LDLJ-A (pos). The error grows with both wiggling amplitude and frequency.</li>
+    </ul>
+  </section>
+
   <footer>
     <span>Repairing Broken Movements &mdash; Sivakumar Balasubramanian</span>
     <a href="https://siva82kb.substack.com" target="_blank">Full article on Substack &rarr;</a>

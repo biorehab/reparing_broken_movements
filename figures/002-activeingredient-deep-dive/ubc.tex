@@ -1,0 +1,235 @@
+\documentclass[tikz, border=14pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, calc, positioning}
+
+% ─── Color palette ────────────────────────────────────────────────────────────
+% UBC graph
+\definecolor{ubcfill}{RGB}{222, 218, 210}    % warm light gray (base UBC node)
+\definecolor{ubcstroke}{RGB}{152, 147, 140}  % UBC node border
+\definecolor{ubcedgecol}{RGB}{186, 181, 173} % UBC edge color
+% Treatments
+\definecolor{treatA}{RGB}{38, 82, 200}       % blue  — Treatment A
+\definecolor{treatB}{RGB}{208, 50, 50}       % red   — Treatment B
+\definecolor{sharedcol}{RGB}{110, 98, 172}   % violet — shared segment
+% Target
+\definecolor{targetcol}{RGB}{42, 132, 76}
+\definecolor{targetstroke}{RGB}{28, 95, 54}
+% Node-role annotation colors
+\definecolor{childcol}{RGB}{0, 140, 140}
+\definecolor{parentcol}{RGB}{210, 100, 0}
+\definecolor{ancestcol}{RGB}{130, 55, 160}
+
+% ─── Styles ───────────────────────────────────────────────────────────────────
+\tikzset{
+  % UBC nodes — use depth variant to encode diminishing knowledge
+  % 'ubc' is the node nearest the target (most knowledge, most opaque)
+  % 'ubcP' is the most peripheral (faintest)
+  ubc/.style={
+    circle, draw=ubcstroke, fill=ubcfill,
+    minimum size=7pt, inner sep=0pt, line width=0.6pt
+  },
+  ubc1/.style={ubc, fill=ubcfill!80!white, draw=ubcstroke!75!white},
+  ubc2/.style={ubc, fill=ubcfill!58!white, draw=ubcstroke!53!white},
+  ubc3/.style={ubc, fill=ubcfill!36!white, draw=ubcstroke!32!white},
+  ubc4/.style={ubc, fill=ubcfill!22!white, draw=ubcstroke!18!white},
+  ubcP/.style={ubc, fill=ubcfill!12!white, draw=ubcstroke!10!white},
+  %
+  % Boarding / path nodes (override the UBC fill)
+  nodeA/.style={  % node lies on Treatment A's path only
+    ubc, draw=treatA!70!black, fill=treatA!18!white, line width=0.8pt
+  },
+  nodeB/.style={  % node lies on Treatment B's path only
+    ubc, draw=treatB!70!black, fill=treatB!18!white, line width=0.8pt
+  },
+  nodeAB/.style={ % node lies on the shared (A ∩ B) segment → violet
+    ubc, draw=sharedcol!75!black, fill=sharedcol!20!white, line width=0.8pt
+  },
+  %
+  % Target
+  target/.style={
+    circle, draw=targetstroke, fill=targetcol,
+    minimum size=13pt, inner sep=0pt, line width=1.0pt,
+    text=white, font=\scriptsize\bfseries
+  },
+  %
+  % UBC background edges — same depth numbering as nodes
+  ubc edge/.style={
+    -Stealth, color=ubcedgecol, line width=0.6pt,
+    shorten >=2pt, shorten <=2pt
+  },
+  ubc1 edge/.style={ubc edge, color=ubcedgecol!80!white},
+  ubc2 edge/.style={ubc edge, color=ubcedgecol!58!white},
+  ubc3 edge/.style={ubc edge, color=ubcedgecol!36!white},
+  ubc4 edge/.style={ubc edge, color=ubcedgecol!22!white},
+  ubcP edge/.style={ubc edge, color=ubcedgecol!12!white},
+  % UBC stubs — short plain lines (no arrowhead) from peripheral nodes
+  % indicating the graph continues beyond what is shown
+  ubc stub/.style={color=ubcedgecol, line width=0.5pt, shorten <=2pt},
+  ubc1 stub/.style={ubc stub, color=ubcedgecol!80!white},
+  ubc2 stub/.style={ubc stub, color=ubcedgecol!58!white},
+  ubc3 stub/.style={ubc stub, color=ubcedgecol!36!white},
+  ubc4 stub/.style={ubc stub, color=ubcedgecol!22!white},
+  ubcP stub/.style={ubc stub, color=ubcedgecol!12!white},
+  %
+  % Treatment path edges
+  % NOTE: TikZ has no canvas-style alpha blending. Explicitly use
+  %       'shared edge' for segments where A and B travel together.
+  treatA edge/.style={
+    -latex, color=treatA, line width=0.8pt, opacity=0.65,
+    shorten >=3pt, shorten <=3pt
+  },
+  treatB edge/.style={
+    -latex, color=treatB, line width=0.8pt, opacity=0.65,
+    shorten >=3pt, shorten <=3pt
+  },
+  shared edge/.style={
+    -latex, color=sharedcol, line width=1.5pt, opacity=1.0,
+    shorten >=3pt, shorten <=3pt
+  },
+  %
+  % Ingredient arrows (dashed; tail = ingredient, head = boarding node)
+  ingrA/.style={
+    -Stealth, color=treatA, dashed, line width=0.8pt,
+    shorten >=3pt
+  },
+  ingrB/.style={
+    -Stealth, color=treatB, dashed, line width=0.8pt,
+    shorten >=3pt
+  },
+  % Mini subgraph nodes for the annotation panel
+  mnfoc/.style={ubc, minimum size=6pt, line width=1.0pt},
+  mnubc/.style={ubc1, minimum size=5pt},
+  mnubc3/.style={ubc3, minimum size=5pt},
+  mn edge/.style={-Stealth, color=ubcedgecol, line width=0.5pt, shorten >=1.5pt, shorten <=1.5pt},
+  mn stub/.style={color=ubcedgecol!50!white, line width=0.4pt},
+}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm]
+
+  %% ── UBC nodes ─────────────────────────────────────────────────────────────
+  %% Depth guide: ubc (closest to T / most visible)
+  %%              ubc1 → ubc2 → ubc3 → ubc4 → ubcP (faintest / most distal)
+  %%
+  %% UBC 1
+  \node[ubc1, label={above:$x_1$}]          (x1)  at (0.0,  0.75) {};
+  \node[ubc1, label={left:$x_2$}]           (x2)  at (0.0,  2.0)  {};
+  \node[ubc1, label={right:$x_3$}]     (x3)  at (0.0, -2.0)  {};
+  \node[ubc1, label={above:$x_5$}]          (x5)  at (2.0,  1.0)  {};
+  \node[ubc1, label={below:$x_6$}]          (x6)  at (4.0,  2.0)  {};
+  \node[ubc1, label={above right:$x_7$}]    (x7)  at (5.0,  1.0)  {};
+  \node[ubc1, label={above:$x_8$}]          (x8)  at (3.0,  0.0)  {};
+  \node[ubc1, label={above:$x_9$}]          (x9)  at (2.0, -2.0)  {};
+  \node[ubc1, label={above:$x_{10}$}]       (x10) at (3.0, -2.5)  {};
+  \node[ubc1, label={below right:$x_{11}$}] (x11) at (5.0, -1.0)  {};
+  \node[ubc1, label={left:$x_{14}$}]        (x14) at (0.0,  -0.65) {};
+
+  %% UBC 3
+  \node[ubc3] (x12) at (-2.0, -3.0) {};
+  \node[ubc3, label={below:$x_{13}$}] (x13) at (-2.0, -1.0) {};
+  \node[ubc3] (x15) at (-2.0,  1.0) {};
+  \node[ubc3] (x16) at (-2.0,  3.0) {};
+
+  %% UBC 4
+  \node[ubc4] (x4)  at ( 2.0,  3.0) {};
+  \node[ubc4] (x18) at ( 6.0,  2.5) {};
+
+  %% ── Boarding / path nodes ─────────────────────────────────────────────────
+  %% Replace the UBC-style node with nodeA / nodeB / nodeAB at boarding points.
+  %%
+  \node[font=\large\bfseries, color=black] at (2.5, 4.0) {UBC Pathway};
+
+  %% ── Target ────────────────────────────────────────────────────────────────
+  \node[target] (T) at (7.0, 0) {T};
+
+  %% ── UBC background edges ──────────────────────────────────────────────────
+  \draw[ubc edge]  (x1) -- (x5);
+  \draw[ubc edge]  (x1) -- (x8);
+  \draw[ubc edge]  (x1) -- (x14);
+  \draw[ubc3 edge] (x2) -- (x4);
+  \draw[ubc edge]  (x2) -- (x5);
+  \draw[ubc edge]  (x3) to[out=45, in=-150] (x8);
+  \draw[ubc edge]  (x3) -- (x14);
+  \draw[ubc edge]  (x5) -- (x6);
+  \draw[ubc edge]  (x6) to[out=0, in=90] (x7);
+  \draw[ubc edge]  (x8) to[out=0, in=-90] (x7);
+  \draw[ubc edge]  (x9) to[out=0, in=-90] (x8);
+  \draw[ubc edge]  (x9) to[out=-90, in=180] (x10);
+  \draw[ubc edge]  (x10) -- (x11);
+  \draw[ubc edge]  (x7) -- (T);
+  \draw[ubc edge]  (x11) -- (T);
+  \draw[ubc3 edge] (x18) -- (T);
+  \draw[ubc3 edge] (x18) -- (x4);
+  \draw[ubc1 edge] (x2) to[out=-120, in=30] (x15);
+  \draw[ubc2 edge] (x13) -- (x15);
+  \draw[ubc2 edge] (x16) -- (x15);
+  \draw[ubc2 edge] (x12) to[out=0, in=-120] (x9);
+  \draw[ubc2 edge] (x13) -- (x1);
+  \draw[ubc2 edge] (x13) -- (x3);
+
+  %% ── UBC stubs (outer nodes — graph continues beyond) ─────────────────────
+  % left cluster (x12–x16): stubs going further left, diverging slightly
+  \draw[ubc3 stub] (x16) -- +(-0.55,  0.20);
+  \draw[ubc3 stub] (x15) -- +(-0.55,  0.00);
+  \draw[ubc3 stub] (x13) -- +(-0.55,  0.10);
+  \draw[ubc3 stub] (x13) -- +(-0.55, -0.25);
+  \draw[ubc3 stub] (x12) -- +(-0.45, -0.25);
+  \draw[ubc3 stub] (x12) -- +(-0.10, -0.55);
+  % top nodes
+  \draw[ubc4 stub] (x4)  -- +(-0.20,  0.58);
+  \draw[ubc4 stub] (x4)  -- +( 0.20,  0.58);
+  \draw[ubc4 stub] (x18) -- +( 0.28,  0.50);
+  % bottom fringe
+  \draw[ubc1 stub] (x10) -- +(-0.20, -0.50);
+  \draw[ubc1 stub] (x10) -- +( 0.35, -0.50);
+  \draw[ubc1 stub] (x11) -- +( 0.15, -0.50);
+
+  %% ── Annotation panel ─────────────────────────────────────────────────────
+  % Light background
+  \fill[black!4] (8.0, -4.0) rectangle (13.5, 4.5);
+
+  %% Block 1 — Child nodes (top)
+  \node[anchor=west, font=\small\bfseries, color=childcol, align=left, text width=4.5cm] at (8.2, 4.1) {$x_7$ is a Child node of $x_8$};
+  % mini diagram: focal → child
+  \node[mnfoc, label={[font=\small]below:$x_8$}] (mf1) at (9.8,  3.6) {};
+  \node[mnubc, label={[font=\small]below:$x_7$}] (mc1) at (11.2, 3.6) {};
+  \draw[mn edge] (mf1) -- (mc1);
+  \node[anchor=north west, font=\scriptsize, text width=4.75cm, align=left] at (8.2, 3.15) {A node's child node directly reachable via a single directed edge.};
+  
+  % Divider
+  \draw[black!15, line width=0.3pt] (8.0, 2.3) -- (13.5, 2.3);
+  
+  %% Block 2 — Parent nodes (middle)
+  \node[anchor=west, font=\small\bfseries, color=parentcol, align=left, text width=4.5cm] at (8.2, 1.85) {$x_1, x_3, x_9$ are Parent nodes of $x_8$};
+  % mini diagram: three parents → focal
+  \node[mnubc, label={[font=\small]left:$x_1$}] (mp1) at (9.8,  1.25) {};
+  \node[mnubc, label={[font=\small]left:$x_3$}] (mp2) at (9.8,  0.8) {};
+  \node[mnubc, label={[font=\small]left:$x_9$}] (mp3) at (9.8,  0.35) {};
+  \node[mnfoc, label={[font=\small]right:$x_8$}] (mf2) at (11.2, 0.8) {};
+  \draw[mn edge] (mp1) -- (mf2);
+  \draw[mn edge] (mp2) -- (mf2);
+  \draw[mn edge] (mp3) -- (mf2);
+  \node[anchor=north west, font=\scriptsize, text width=4.75cm, align=left] at (8.2, 0.1) {A node is directly reachable from it parents via a single directed edge.};
+  
+  % Divider
+  \draw[black!15, line width=0.3pt] (8.0, -0.7) -- (13.5, -0.7);
+  
+  %% Block 3 — Ancestor nodes (bottom)
+  \node[anchor=west, font=\small\bfseries, color=ancestcol, align=left, text width=4.5cm] at (8.2, -1.25) {$x_1, x_3, x_{13}, \ldots$ are Ancestor nodes of $x_8$};
+  
+  % mini diagram: deep ancestor → ancestor → focal (chain)
+  \node[mnubc3, label={[font=\small]below:$x_{13}$}] (ma1) at (9.1,  -2.45) {};
+  \node[mnubc,  label={[font=\small]above right:$x_1$}]    (ma2) at (10.3, -1.95) {};
+  \node[mnubc,  label={[font=\small]above:$x_3$}]    (ma3) at (10.3, -2.95) {};
+  \node[mnfoc,  label={[font=\small]below:$x_8$}]    (mf4) at (11.5, -2.45) {};
+  \draw[mn edge] (ma1) -- (ma2);
+  \draw[mn edge] (ma1) -- (ma3);
+  \draw[mn edge] (ma2) -- (mf4);
+  \draw[mn edge] (ma3) -- (mf4);
+  % stub left of ma1 to hint the chain continues further
+  \draw[mn stub] (ma1) -- +(-0.45, 0.0);
+  \draw[mn stub] (ma1) -- +(-0.35, 0.25);
+  \node[anchor=north west, font=\scriptsize, text width=4.75cm, align=left] at (8.2, -3.2) {A node is reachable from any of its ancestors via a series of directed edge.};
+  
+\end{tikzpicture}
+\end{document}

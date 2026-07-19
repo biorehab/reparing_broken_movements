@@ -1,0 +1,173 @@
+\documentclass[tikz, border=14pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, calc, positioning}
+
+% ─── Color palette ────────────────────────────────────────────────────────────
+\definecolor{ubcfill}{RGB}{222, 218, 210}
+\definecolor{ubcstroke}{RGB}{152, 147, 140}
+\definecolor{ubcedgecol}{RGB}{186, 181, 173}
+\definecolor{treatA}{RGB}{38, 82, 200}
+\definecolor{treatB}{RGB}{208, 50, 50}
+\definecolor{sharedcol}{RGB}{110, 98, 172}
+\definecolor{targetcol}{RGB}{42, 132, 76}
+\definecolor{targetstroke}{RGB}{28, 95, 54}
+
+% ─── Styles ───────────────────────────────────────────────────────────────────
+\tikzset{
+  ubc/.style={
+    circle, draw=ubcstroke, fill=ubcfill,
+    minimum size=7pt, inner sep=0pt, line width=0.6pt
+  },
+  ubc1/.style={ubc, fill=ubcfill!80!white, draw=ubcstroke!75!white},
+  ubc2/.style={ubc, fill=ubcfill!58!white, draw=ubcstroke!53!white},
+  ubc3/.style={ubc, fill=ubcfill!36!white, draw=ubcstroke!32!white},
+  ubc4/.style={ubc, fill=ubcfill!22!white, draw=ubcstroke!18!white},
+  ubcP/.style={ubc, fill=ubcfill!12!white, draw=ubcstroke!10!white},
+  nodeA/.style={ubc, draw=treatA!70!black, fill=treatA!18!white, line width=0.8pt},
+  nodeB/.style={ubc, draw=treatB!70!black, fill=treatB!18!white, line width=0.8pt},
+  nodeAB/.style={ubc, draw=sharedcol!75!black, fill=sharedcol!20!white, line width=0.8pt},
+  target/.style={
+    circle, draw=targetstroke, fill=targetcol,
+    minimum size=13pt, inner sep=0pt, line width=1.0pt,
+    text=white, font=\scriptsize\bfseries
+  },
+  ubc edge/.style={-Stealth, color=ubcedgecol, line width=0.6pt, shorten >=2pt, shorten <=2pt},
+  ubc1 edge/.style={ubc edge, color=ubcedgecol!80!white},
+  ubc2 edge/.style={ubc edge, color=ubcedgecol!58!white},
+  ubc3 edge/.style={ubc edge, color=ubcedgecol!36!white},
+  ubc4 edge/.style={ubc edge, color=ubcedgecol!22!white},
+  ubcP edge/.style={ubc edge, color=ubcedgecol!12!white},
+  ubc stub/.style={color=ubcedgecol, line width=0.5pt, shorten <=2pt},
+  ubc1 stub/.style={ubc stub, color=ubcedgecol!80!white},
+  ubc2 stub/.style={ubc stub, color=ubcedgecol!58!white},
+  ubc3 stub/.style={ubc stub, color=ubcedgecol!36!white},
+  ubc4 stub/.style={ubc stub, color=ubcedgecol!22!white},
+  ubcP stub/.style={ubc stub, color=ubcedgecol!12!white},
+  treatA edge/.style={-latex, color=treatA, line width=0.8pt, opacity=0.65, shorten >=3pt, shorten <=3pt},
+  treatB edge/.style={-latex, color=treatB, line width=0.8pt, opacity=0.65, shorten >=3pt, shorten <=3pt},
+  shared edge/.style={-latex, color=sharedcol, line width=1.5pt, opacity=1.0, shorten >=3pt, shorten <=3pt},
+  ingrA/.style={-Stealth, color=treatA, dashed, line width=0.8pt, shorten >=3pt},
+  ingrB/.style={-Stealth, color=treatB, dashed, line width=0.8pt, shorten >=3pt},
+}
+
+% ─── Shared node/edge/stub definitions ───────────────────────────────────────
+% All nodes placed with plain ubc1 style (treatment color applied per-panel as overlay).
+% Node names are global in TikZ — each \ubcnodes call redefines them for that panel.
+\newcommand{\ubcnodes}{%
+  \node[ubc1]  (x1)  at (0.0,  0.0) {};
+  \node[ubc1, label={[font=\scriptsize]below:$x_2$}]      (x2)  at (0.0,  2.0)  {};
+  \node[ubc1, label={[font=\scriptsize]below:$x_3$}]      (x3)  at (0.0, -2.0)  {};
+  \node[ubc1, label={[font=\scriptsize]above:$x_5$}]      (x5)  at (2.0,  1.0)  {};
+  \node[ubc1, label={[font=\scriptsize]above left:$x_6$}] (x6)  at (4.0,  2.0)  {};
+  \node[ubc1, label={[font=\scriptsize]left:$x_7$}]       (x7)  at (5.0,  1.0)  {};
+  \node[ubc1, label={[font=\scriptsize]above:$x_8$}]      (x8)  at (3.0,  0.0)  {};
+  \node[ubc1]                                              (x9)  at (2.0, -2.0)  {};
+  \node[ubc1, label={[font=\scriptsize]above:$x_{10}$}]   (x10) at (3.0, -2.5)  {};
+  \node[ubc1, label={[font=\scriptsize]above:$x_{11}$}]   (x11) at (5.0, -1.0)  {};
+  \node[ubc3]  (x12) at (-2.0, -3.0) {};
+  \node[ubc3]  (x13) at (-2.0, -1.0) {};
+  \node[ubc3]  (x14) at (-2.0,  1.0) {};
+  \node[ubc3]  (x15) at (-2.0,  3.0) {};
+  \node[ubc4]  (x4)  at ( 2.0,  3.0) {};
+  \node[ubc4]  (x17) at ( 6.0,  2.5) {};
+  \node[target] (T)  at ( 7.0,  0.0) {T};
+}
+
+\newcommand{\ubcedges}{%
+  \draw[ubc edge]   (x1)  -- (x5);
+  \draw[ubc edge]   (x1)  -- (x8);
+  \draw[ubc3 edge]  (x2)  -- (x4);
+  \draw[ubc edge]   (x9)  to[out=0,   in=-90] (x8);
+  \draw[ubc edge]   (x9)  to[out=-90, in=180] (x10);
+  \draw[ubc3 edge]  (x17) -- (T);
+  \draw[ubc3 edge]  (x17) -- (x4);
+  \draw[ubc1 edge]  (x2)  -- (x14);
+  \draw[ubc2 edge]  (x13) -- (x14);
+  \draw[ubc2 edge]  (x15) -- (x14);
+  \draw[ubc2 edge]  (x12) to[out=0, in=200] (x9);
+  \draw[ubc2 edge]  (x13) -- (x1);
+  \draw[ubc2 edge]  (x13) -- (x3);
+}
+
+\newcommand{\ubcstubs}{%
+  \draw[ubc3 stub] (x15) -- +(-0.55,  0.20);
+  \draw[ubc3 stub] (x14) -- +(-0.55,  0.00);
+  \draw[ubc3 stub] (x13) -- +(-0.55,  0.10);
+  \draw[ubc3 stub] (x13) -- +(-0.55, -0.25);
+  \draw[ubc3 stub] (x12) -- +(-0.45, -0.25);
+  \draw[ubc3 stub] (x12) -- +(-0.10, -0.55);
+  \draw[ubc4 stub] (x4)  -- +(-0.20,  0.58);
+  \draw[ubc4 stub] (x4)  -- +( 0.20,  0.58);
+  \draw[ubc4 stub] (x17) -- +( 0.28,  0.50);
+  \draw[ubc1 stub] (x10) -- +(-0.20, -0.50);
+  \draw[ubc1 stub] (x10) -- +( 0.35, -0.50);
+  \draw[ubc1 stub] (x11) -- +( 0.15, -0.50);
+}
+
+% ─── Document ─────────────────────────────────────────────────────────────────
+\begin{document}
+
+%% ── Panel 1: UBC pathway only ────────────────────────────────────────────────
+\begin{tikzpicture}[x=1cm, y=1cm]
+  \ubcstubs
+  \ubcedges
+  \ubcnodes
+\end{tikzpicture}
+%
+\quad
+%
+%% ── Panel 2: Treatment A ─────────────────────────────────────────────────────
+\begin{tikzpicture}[x=1cm, y=1cm]
+  \ubcstubs
+  \ubcedges
+  \ubcnodes
+  %% Colored overlays on pathway nodes (no name — drawn on top of ubc1 gray)
+  \node[nodeA]  at (0.0,  2.0) {};   % x2
+  \node[nodeA]  at (0.0, -2.0) {};   % x3
+  \node[nodeA]  at (2.0,  1.0) {};   % x5
+  \node[nodeA]  at (3.0,  0.0) {};   % x8
+  \node[nodeAB] at (4.0,  2.0) {};   % x6 — shared
+  \node[nodeAB] at (5.0,  1.0) {};   % x7 — shared
+  %% Boarding nodes
+  \node[nodeA, label={[color=treatA, font=\scriptsize\bfseries]left:$A_1$}] (nA1) at (0.0,  3.2)  {};
+  \node[nodeA, label={[color=treatA, font=\scriptsize\bfseries]left:$A_2$}] (nA2) at (0.0, -0.8)  {};
+  %% Treatment A path
+  \draw[treatA edge] (x2) -- (x5);
+  \draw[treatA edge] (x3) -- (x8);
+  \draw[treatA edge] (x5) -- (x6);
+  \draw[treatA edge] (x8) to[out=0, in=-90] (x7);
+  %% Shared final segment (violet)
+  \draw[shared edge] (x6) to[out=0, in=110] (x7);
+  \draw[shared edge] (x7) -- (T);
+  %% Ingredient arrows (A boards at x2 and x3)
+  \draw[treatA edge] (nA1) -- (x2);
+  \draw[treatA edge] (nA2) -- (x3);
+\end{tikzpicture}
+%
+\quad
+%
+%% ── Panel 3: Treatment B ─────────────────────────────────────────────────────
+\begin{tikzpicture}[x=1cm, y=1cm]
+  \ubcstubs
+  \ubcedges
+  \ubcnodes
+  %% Colored overlays
+  \node[nodeAB] at (4.0,  2.0) {};   % x6 — shared
+  \node[nodeAB] at (5.0,  1.0) {};   % x7 — shared
+  \node[nodeB]  at (3.0, -2.5) {};   % x10
+  \node[nodeB]  at (5.0, -1.0) {};   % x11
+  %% Boarding nodes
+  \node[nodeB, label={[color=treatB, font=\scriptsize\bfseries]above:$B_1$}] (nB1) at (4.0,  3.5)  {};
+  \node[nodeB, label={[color=treatB, font=\scriptsize\bfseries]below:$B_2$}] (nB2) at (3.0, -4.0)  {};
+  %% Treatment B path
+  \draw[treatB edge] (x10) -- (x11);
+  \draw[treatB edge] (x11) -- (T);
+  %% Shared final segment (violet — same route A uses)
+  \draw[shared edge] (x6) to[out=0, in=110] (x7);
+  \draw[shared edge] (x7) -- (T);
+  %% Ingredient arrows (B boards at x6 and x10)
+  \draw[treatB edge] (nB1) -- (x6);
+  \draw[treatB edge] (nB2) -- (x10);
+\end{tikzpicture}
+
+\end{document}
